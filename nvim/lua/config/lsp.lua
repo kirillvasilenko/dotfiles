@@ -11,7 +11,6 @@ vim.lsp.config("clangd", {
   capabilities = capabilities,
 })
 
-vim.lsp.enable("clangd")
 
 -- we have them in the telescope integration
 --vim.keymap.set("n", "gd", vim.lsp.buf.definition, { desc = "Go to definition" })
