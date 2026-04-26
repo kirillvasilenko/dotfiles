@@ -22,7 +22,17 @@ require("lazy").setup({
   {
     "nvim-telescope/telescope.nvim",
     dependencies = { "nvim-lua/plenary.nvim" }
+  },
+  {
+    "neovim/nvim-lspconfig",
+  },
+  -- code completion
+  {
+    "hrsh7th/nvim-cmp",
+    dependencies = { "hrsh7th/cmp-nvim-lsp" },
   }
 })
 
 require("config/telescope")
+require("config/cmp")
+require("config/lsp")

@@ -16,7 +16,6 @@ vim.opt.termguicolors = true
 vim.opt.scrolloff = 8
 
 -- Clipboard
-vim.opt.clipboard = "unnamedplus"
 
 vim.g.clipboard = {
   name = "OSC 52",
