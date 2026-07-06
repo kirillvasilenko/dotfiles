@@ -34,7 +34,11 @@ require("lazy").setup({
   {
     "p00f/clangd_extensions.nvim",
     dependencies = { "neovim/nvim-lspconfig" },
-  }
+  },
+  {
+    "sindrets/diffview.nvim",
+    dependencies = { "nvim-lua/plenary.nvim" },
+  },
 })
 
 require("config/telescope")
@@ -42,3 +46,4 @@ require("config/cmp")
 require("config/lsp")
 require("config/clangd")
 require("config/python")
+require("config/diffview")
