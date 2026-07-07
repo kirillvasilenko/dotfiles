@@ -22,7 +22,10 @@ vim.opt.rtp:prepend(lazypath)
 require("lazy").setup({
   {
     "nvim-telescope/telescope.nvim",
-    dependencies = { "nvim-lua/plenary.nvim" }
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "nvim-telescope/telescope-live-grep-args.nvim",
+    },
   },
   {
     "neovim/nvim-lspconfig",
