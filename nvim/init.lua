@@ -37,7 +37,13 @@ require("lazy").setup({
   },
   {
     "sindrets/diffview.nvim",
-    dependencies = { "nvim-lua/plenary.nvim" },
+    dependencies = {
+      "nvim-lua/plenary.nvim",
+      "nvim-tree/nvim-web-devicons",
+    },
+  },
+  {
+    "lewis6991/gitsigns.nvim",
   },
 })
 
@@ -47,3 +53,4 @@ require("config/lsp")
 require("config/clangd")
 require("config/python")
 require("config/diffview")
+require("config/gitsigns")
