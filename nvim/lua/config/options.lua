@@ -14,6 +14,8 @@ vim.opt.smartcase = true
 -- UI
 vim.opt.termguicolors = true
 vim.opt.scrolloff = 8
+-- Warp has problems with colorschemes, this makes plugins like diffview work in light/dark modes
+vim.cmd.colorscheme("default")
 
 -- Clipboard
 
