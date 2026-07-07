@@ -42,3 +42,9 @@ vim.keymap.set("n", "<leader>fd", function()
   })
 end)
 vim.keymap.set("n", "<leader>/", builtin.current_buffer_fuzzy_find)
+-- fuzzy find in the current file, seeded with the word under the cursor
+vim.keymap.set("n", "<leader>*", function()
+  builtin.current_buffer_fuzzy_find({
+    default_text = vim.fn.expand("<cword>"),
+  })
+end)
