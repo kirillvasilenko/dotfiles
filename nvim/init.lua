@@ -3,6 +3,7 @@ vim.g.mapleader = " "
 
 require("config/options")
 require("config/keymap")
+require("config/cursorlink")
 
 -- Bootstrap lazy.nvim (auto install)
 local lazypath = vim.fn.stdpath("data") .. "/lazy/lazy.nvim"
