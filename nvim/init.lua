@@ -35,6 +35,10 @@ require("lazy").setup({
     "hrsh7th/nvim-cmp",
     dependencies = { "hrsh7th/cmp-nvim-lsp" },
   },
+  -- AI completion
+  {
+    "supermaven-inc/supermaven-nvim",
+  },
   {
     "p00f/clangd_extensions.nvim",
     dependencies = { "neovim/nvim-lspconfig" },
@@ -52,6 +56,7 @@ require("lazy").setup({
 })
 
 require("config/telescope")
+require("config/supermaven")
 require("config/cmp")
 require("config/lsp")
 require("config/clangd")

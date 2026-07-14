@@ -6,6 +6,7 @@ cmp.setup({
     ["<CR>"] = cmp.mapping.confirm({ select = true }),
   }),
   sources = {
+    -- { name = "supermaven" },
     { name = "nvim_lsp" },
   },
 })
