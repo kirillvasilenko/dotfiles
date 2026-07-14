@@ -23,7 +23,7 @@ telescope.setup({
     live_grep_args = {
       -- false: the search term does NOT need quotes, so `foo -g *.lua` works.
       -- Only quote the term when it contains spaces, e.g. `"foo bar" -g *.lua`.
-      auto_quoting = false,
+      auto_quoting = true,
       mappings = {
         i = {
           -- quote the current prompt (handy when the term has spaces)
