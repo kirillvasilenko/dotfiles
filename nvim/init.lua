@@ -53,6 +53,20 @@ require("lazy").setup({
   {
     "lewis6991/gitsigns.nvim",
   },
+  -- Markdown syntax highlighting (treesitter)
+  {
+    "nvim-treesitter/nvim-treesitter",
+    -- The main branch does not support lazy-loading.
+    lazy = false,
+    build = ":TSUpdate",
+  },
+  -- Markdown preview with mermaid support (rendered in browser via forwarded port)
+  {
+    "iamcco/markdown-preview.nvim",
+    ft = { "markdown" },
+    -- --no-package-lock keeps the plugin's git tree clean so `:Lazy sync` won't refuse to update (npm would otherwise rewrite the tracked yarn.lock).
+    build = "cd app && npm install --no-package-lock",
+  },
 })
 
 require("config/telescope")
@@ -63,3 +77,5 @@ require("config/clangd")
 require("config/python")
 require("config/diffview")
 require("config/gitsigns")
+require("config/treesitter")
+require("config/markdown")

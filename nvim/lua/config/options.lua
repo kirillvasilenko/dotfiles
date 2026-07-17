@@ -7,6 +7,13 @@ vim.opt.tabstop = 4
 vim.opt.shiftwidth = 4
 vim.opt.expandtab = true
 
+-- Treat .h headers as C++ (affects both clangd and treesitter).
+vim.filetype.add({
+  extension = {
+    h = "cpp",
+  },
+})
+
 -- Search
 vim.opt.ignorecase = true
 vim.opt.smartcase = true
