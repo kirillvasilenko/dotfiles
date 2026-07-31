@@ -1,3 +1,5 @@
+local current_colorscheme = "default"
+-- local current_colorscheme = "tokyonight"
 return {
   {
     "folke/tokyonight.nvim",
@@ -5,12 +7,12 @@ return {
     priority = 1000,
     config = function()
       require("tokyonight").setup({
-        style = "night",
+        style = "moon",
         light_style = "day",
         -- Lowers the total background light output significantly
         day_brightness = 0.2, 
       })
-      vim.cmd.colorscheme("tokyonight")
+      vim.cmd.colorscheme(current_colorscheme)
 
       -- Do NOT set 'background' yourself. Neovim 0.11+ tracks it from the
       -- terminal via OSC 11, and explicitly setting it disables that.
@@ -21,7 +23,7 @@ return {
       vim.api.nvim_create_autocmd("OptionSet", {
         pattern = "background",
         callback = function()
-          vim.cmd.colorscheme("tokyonight")
+          vim.cmd.colorscheme(current_colorscheme)
         end,
       })
 
