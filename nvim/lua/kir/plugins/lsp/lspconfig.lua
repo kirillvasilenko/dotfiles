@@ -59,8 +59,10 @@ return {
         --
         -- Misc
         -- <leader>rs  [custom]  restart LSP client                  unbound
-        -- grh         [custom]  toggle inlay hints                  unbound (Vim: virtual-replace "h")
+        -- grl         [custom]  toggle inlay hints                  unbound (Vim: virtual-replace "l")
         --             also: :LspInlayHintToggle
+        --
+        -- Clangd-only (see kir/plugins/lsp/clangd.lua): grs, grh
 
         local client = vim.lsp.get_client_by_id(ev.data.client_id)
         if client and client:supports_method("textDocument/inlayHint", ev.buf) then
@@ -109,7 +111,7 @@ return {
         keymap.set("n", "<leader>rs", vim.cmd.LspRestart, opts)
 
         opts.desc = "Toggle inlay hints"
-        keymap.set("n", "grh", toggle_inlay_hints, opts)
+        keymap.set("n", "grl", toggle_inlay_hints, opts)
       end,
     })
   end,

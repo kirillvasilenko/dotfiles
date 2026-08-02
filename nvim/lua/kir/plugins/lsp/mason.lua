@@ -55,6 +55,7 @@ return {
         "isort", -- python formatter
         "black", -- python formatter
         "clang-format", -- c/c++ formatter
+        -- "cpplint", -- c/c++ linter (Google style)
       },
     })
   end,
