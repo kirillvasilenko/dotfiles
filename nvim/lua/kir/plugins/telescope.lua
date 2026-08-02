@@ -5,6 +5,7 @@ return {
     { "nvim-telescope/telescope-fzf-native.nvim", build = "make" },
     "nvim-tree/nvim-web-devicons",
     "nvim-telescope/telescope-live-grep-args.nvim",
+    "folke/todo-comments.nvim",
   },
   config = function()
     local telescope = require("telescope")
@@ -135,6 +136,8 @@ return {
         default_text = vim.fn.expand("<cword>"),
       })
     end, { desc = "Fuzzy find in current buffer with word under cursor" })
+
+    keymap.set("n", "<leader>ft", vim.cmd.TodoTelescope, { desc = "Find todos" })
 
   end,
 }
