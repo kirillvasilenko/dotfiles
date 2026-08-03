@@ -11,6 +11,7 @@ return {
     local telescope = require("telescope")
     local actions = require("telescope.actions")
     local action_state = require("telescope.actions.state")
+    local finders = require("telescope.finders")
     local builtin = require("telescope.builtin")
     local lga_actions = require("telescope-live-grep-args.actions")
     local lga_helpers = require("telescope-live-grep-args.helpers")
@@ -51,6 +52,60 @@ return {
       end
     end
 
+    -- Drop current (or multi-selected) results from the picker list.
+    -- delete_selection only works for static finders (finder.results).
+    -- Async pickers (live_grep, etc.) have no results table — freeze the
+    -- current manager entries into a table finder, minus the dropped ones.
+    local function drop_result(prompt_bufnr)
+      local picker = action_state.get_current_picker(prompt_bufnr)
+
+      if picker.finder.results then
+        picker:delete_selection(function()
+          return true
+        end)
+        return
+      end
+
+      local drop = {}
+      local multi = picker:get_multi_selection()
+      if not vim.tbl_isempty(multi) then
+        for _, entry in ipairs(multi) do
+          drop[entry] = true
+        end
+      else
+        local selection = action_state.get_selected_entry()
+        if not selection then
+          return
+        end
+        drop[selection] = true
+      end
+
+      local kept = {}
+      for entry in picker.manager:iter() do
+        if not drop[entry] then
+          kept[#kept + 1] = entry
+        end
+      end
+
+      -- Keep the same results-row after freeze (same trick as delete_selection).
+      local original_selection_strategy = picker.selection_strategy
+      picker.selection_strategy = "row"
+
+      picker:refresh(
+        finders.new_table({
+          results = kept,
+          entry_maker = function(entry)
+            return entry
+          end,
+        }),
+        { reset_prompt = false }
+      )
+
+      vim.defer_fn(function()
+        picker.selection_strategy = original_selection_strategy
+      end, 50)
+    end
+
     telescope.setup({
       defaults = {
         path_display = { "truncate" },
@@ -71,10 +126,15 @@ return {
             ["<C-q>"] = actions.smart_send_to_qflist + actions.open_qflist,
             -- selected if any, else all → append to current qflist
             ["<C-a>"] = actions.smart_add_to_qflist + actions.open_qflist,
+            -- override defaults: C-x was hsplit; C-s free → hsplit like C-w s
+            ["<C-x>"] = drop_result,
+            ["<C-s>"] = actions.select_horizontal,
           },
           n = {
             ["<C-q>"] = actions.smart_send_to_qflist + actions.open_qflist,
             ["<C-a>"] = actions.smart_add_to_qflist + actions.open_qflist,
+            ["<C-x>"] = drop_result,
+            ["<C-s>"] = actions.select_horizontal,
           },
         },
       },
@@ -102,7 +162,7 @@ return {
     -- set keymaps
     local keymap = vim.keymap -- for conciseness
 
-    -- In the search window you can ctrl+v/x/t - open the file in a vertical/horisontal split/new tab
+    -- Telescope: C-v vertical, C-s horizontal, C-t tab; C-x drops result from picker
 
     keymap.set("n", "<leader>ff", builtin.find_files, { desc = "Fuzzy find files in cwd" })
     keymap.set("n", "<leader>fb", builtin.buffers, { desc = "Fuzzy find in open buffers" })
