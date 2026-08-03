@@ -67,7 +67,14 @@ return {
           i = {
             ["<C-k>"] = actions.move_selection_previous, -- move to prev result
             ["<C-j>"] = actions.move_selection_next, -- move to next result
-            ["<C-l>"] = actions.send_selected_to_qflist + actions.open_qflist,
+            -- selected if any, else all → new qflist
+            ["<C-q>"] = actions.smart_send_to_qflist + actions.open_qflist,
+            -- selected if any, else all → append to current qflist
+            ["<C-a>"] = actions.smart_add_to_qflist + actions.open_qflist,
+          },
+          n = {
+            ["<C-q>"] = actions.smart_send_to_qflist + actions.open_qflist,
+            ["<C-a>"] = actions.smart_add_to_qflist + actions.open_qflist,
           },
         },
       },
@@ -78,7 +85,7 @@ return {
           mappings = {
             i = {
               -- quote the current prompt (handy when the term has spaces)
-              ["<C-q>"] = lga_actions.quote_prompt(),
+              ["<C-'>"] = lga_actions.quote_prompt(),
               -- include glob: "term" --iglob **/*<cursor>*/**/*<file>*
               ["<C-g>"] = glob_action(false),
               -- exclude glob: same, but ` --iglob !...`

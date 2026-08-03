@@ -1,5 +1,6 @@
 require("kir.core.options")
 require("kir.core.filetypes")
 require("kir.core.keymaps")
+require("kir.core.quickfix")
 require("kir.core.cursorlink")
 require("kir.core.background")
