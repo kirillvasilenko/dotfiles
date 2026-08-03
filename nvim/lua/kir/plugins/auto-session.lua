@@ -3,8 +3,8 @@ return {
   config = function()
     local auto_session = require("auto-session")
 
-    ---@return string|nil
-    local function serialize_qflist_stack()
+    ---@return table|nil
+    local function qflist_stack_payload()
       local total = vim.fn.getqflist({ nr = "$" }).nr
       if total == 0 then
         return nil
@@ -40,13 +40,12 @@ return {
         }
       end
 
-      return vim.json.encode({ current = current, lists = lists })
+      return { current = current, lists = lists }
     end
 
-    ---@param data string
-    local function restore_qflist_stack(data)
-      local ok, decoded = pcall(vim.json.decode, data)
-      if not ok or type(decoded) ~= "table" or type(decoded.lists) ~= "table" then
+    ---@param decoded table
+    local function restore_qflist_stack(decoded)
+      if type(decoded.lists) ~= "table" then
         return
       end
 
@@ -64,16 +63,60 @@ return {
       end
     end
 
+    local function restore_nvim_tree()
+      local ok, api = pcall(require, "nvim-tree.api")
+      if not ok then
+        return
+      end
+      if vim.g._session_nvim_tree_open then
+        api.tree.open()
+      else
+        api.tree.close()
+      end
+    end
+
     auto_session.setup({
       auto_restore_enabled = false,
       auto_session_suppress_dirs = { "~/", "~/Dev/", "~/Downloads", "~/Documents", "~/Desktop/" },
-      -- Persist the full quickfix stack (titles + items + current index).
+      -- Don't use built-in close_unsupported_windows: it runs before pre_save on
+      -- exit and would always record the tree as closed. We only store a flag;
+      -- post_restore applies open/closed. Keep the tree open during save.
+      close_unsupported_windows = false,
+      pre_save_cmds = {
+        function()
+          local ok, api = pcall(require, "nvim-tree.api")
+          if ok then
+            vim.g._session_nvim_tree_open = api.tree.is_visible()
+          else
+            vim.g._session_nvim_tree_open = false
+          end
+        end,
+      },
       save_extra_data = function(_)
-        return serialize_qflist_stack()
+        local payload = {
+          nvim_tree_open = vim.g._session_nvim_tree_open and true or false,
+        }
+        local qf = qflist_stack_payload()
+        if qf then
+          payload.current = qf.current
+          payload.lists = qf.lists
+        end
+        return vim.json.encode(payload)
       end,
       restore_extra_data = function(_, data)
-        restore_qflist_stack(data)
+        local ok, decoded = pcall(vim.json.decode, data)
+        if not ok or type(decoded) ~= "table" then
+          return
+        end
+        vim.g._session_nvim_tree_open = decoded.nvim_tree_open and true or false
+        restore_qflist_stack(decoded)
       end,
+      post_restore_cmds = {
+        function()
+          -- Schedule so we win against nvim-tree directory hijack during restore.
+          vim.schedule(restore_nvim_tree)
+        end,
+      },
     })
 
     local keymap = vim.keymap
