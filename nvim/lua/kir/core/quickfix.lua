@@ -32,6 +32,40 @@ local function rebuild_qflist_stack(lists)
   end
 end
 
+--- After deleting at `start`, prefer that slot (old next), else walk back.
+--- When `require_valid`, skip separators / invalid entries (for :cc jumps).
+---@param list table[]
+---@param start integer
+---@param require_valid boolean
+---@return integer|nil
+local function pick_idx_after_delete(list, start, require_valid)
+  if #list == 0 then
+    return nil
+  end
+
+  local function ok(i)
+    if i < 1 or i > #list then
+      return false
+    end
+    if not require_valid then
+      return true
+    end
+    return list[i].valid ~= 0
+  end
+
+  for i = start, #list do
+    if ok(i) then
+      return i
+    end
+  end
+  for i = start - 1, 1, -1 do
+    if ok(i) then
+      return i
+    end
+  end
+  return nil
+end
+
 local function delete_qf_entry()
   local wininfo = vim.fn.getwininfo(vim.api.nvim_get_current_win())[1]
   local in_list_win = wininfo.quickfix == 1
@@ -52,17 +86,31 @@ local function delete_qf_entry()
 
   table.remove(list, idx)
 
+  -- Same slot is the old next item; if that was the last, fall back to previous.
+  local new_idx = pick_idx_after_delete(list, idx, not in_list_win)
+
   if is_loclist then
-    vim.fn.setloclist(0, {}, "r", { items = list })
+    vim.fn.setloclist(0, {}, "r", {
+      items = list,
+      idx = new_idx or 1,
+    })
   else
-    vim.fn.setqflist({}, "r", { items = list })
+    vim.fn.setqflist({}, "r", {
+      items = list,
+      idx = new_idx or 1,
+    })
+  end
+
+  if #list == 0 or not new_idx then
+    return
   end
 
   if in_list_win then
-    local new_idx = math.min(idx, #list)
-    if new_idx > 0 then
-      vim.api.nvim_win_set_cursor(0, { new_idx, 0 })
-    end
+    vim.api.nvim_win_set_cursor(0, { new_idx, 0 })
+  elseif is_loclist then
+    vim.cmd("silent! ll " .. new_idx)
+  else
+    vim.cmd("silent! cc " .. new_idx)
   end
 end
 
