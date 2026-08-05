@@ -15,6 +15,7 @@ return {
       "prisma",
       "markdown",
       "markdown_inline",
+      "mermaid",
       "graphql",
       "bash",
       "lua",
