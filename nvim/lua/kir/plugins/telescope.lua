@@ -106,6 +106,16 @@ return {
       end, 50)
     end
 
+    -- Center the opened line (esp. near EOF, where a plain jump hugs the bottom).
+    local function select_and_center(select_fn)
+      return function(prompt_bufnr)
+        select_fn(prompt_bufnr)
+        vim.schedule(function()
+          vim.cmd("normal! zz")
+        end)
+      end
+    end
+
     telescope.setup({
       defaults = {
         path_display = { "truncate" },
@@ -128,13 +138,19 @@ return {
             ["<C-a>"] = actions.smart_add_to_qflist + actions.open_qflist,
             -- override defaults: C-x was hsplit; C-s free → hsplit like C-w s
             ["<C-x>"] = drop_result,
-            ["<C-s>"] = actions.select_horizontal,
+            ["<CR>"] = select_and_center(actions.select_default),
+            ["<C-s>"] = select_and_center(actions.select_horizontal),
+            ["<C-v>"] = select_and_center(actions.select_vertical),
+            ["<C-t>"] = select_and_center(actions.select_tab),
           },
           n = {
             ["<C-q>"] = actions.smart_send_to_qflist + actions.open_qflist,
             ["<C-a>"] = actions.smart_add_to_qflist + actions.open_qflist,
             ["<C-x>"] = drop_result,
-            ["<C-s>"] = actions.select_horizontal,
+            ["<CR>"] = select_and_center(actions.select_default),
+            ["<C-s>"] = select_and_center(actions.select_horizontal),
+            ["<C-v>"] = select_and_center(actions.select_vertical),
+            ["<C-t>"] = select_and_center(actions.select_tab),
           },
         },
       },
