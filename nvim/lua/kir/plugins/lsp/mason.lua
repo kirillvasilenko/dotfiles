@@ -27,6 +27,49 @@ return {
       },
     })
 
+    -- Light grammar/spell on code comments. Markdown is handled by ltex_plus only.
+    local harper_filetypes = vim.tbl_filter(function(ft)
+      return ft ~= "markdown"
+    end, vim.deepcopy(vim.lsp.config.harper_ls.filetypes or {}))
+
+    vim.lsp.config("harper_ls", {
+      filetypes = harper_filetypes,
+      settings = {
+        ["harper-ls"] = {
+          linters = {
+            SpellCheck = true,
+            SpelledNumbers = false,
+            AnA = true,
+            SentenceCapitalization = true,
+            UnclosedQuotes = true,
+            WrongApostrophe = false,
+            LongSentences = true,
+            RepeatedWords = true,
+            Spaces = true,
+            CorrectNumberSuffix = true,
+          },
+          diagnosticSeverity = "hint",
+          dialect = "American",
+        },
+      },
+    })
+
+    -- Strong LanguageTool grammar/spell for Markdown (Obsidian notes, etc.).
+    vim.lsp.config("ltex_plus", {
+      filetypes = { "markdown" },
+      settings = {
+        ltex = {
+          enabled = { "markdown" },
+          language = "en-US",
+          checkFrequency = "edit",
+          diagnosticSeverity = "information",
+          additionalRules = {
+            enablePickyRules = true,
+          },
+        },
+      },
+    })
+
     require("mason").setup()
 
     -- nvim-lspconfig must be on runtimepath before this runs.
@@ -45,6 +88,8 @@ return {
         "pyright",
         "clangd",
         "sqls",
+        "harper_ls",
+        "ltex_plus",
       },
     })
 
