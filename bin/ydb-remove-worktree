@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+# Remove a YDB git worktree + Cursor/ya IDE setup created by ydb-add-worktree.
+#
+# Usage (from the main ydb repo, not a worktree):
+#   ydb-remove-worktree <feature_name>
+
+set -euo pipefail
+
+usage() {
+  cat <<'EOF' >&2
+Usage: ydb-remove-worktree <feature_name>
+
+Must be run from the main ydb repository (not a worktree).
+
+Removes:
+  - git worktree ../ydb-<feature_name> (fails if dirty)
+  - local branch <feature_name> (fails if unmerged)
+  - IDE project ~/ide/ydb-<feature_name>
+
+Example:
+  ydb-remove-worktree my-feature
+EOF
+  exit 1
+}
+
+if [[ $# -ne 1 ]]; then
+  usage
+fi
+
+feature_name=$1
+
+if [[ "$feature_name" == "main" || "$feature_name" == "master" ]]; then
+  echo "error: refusing to remove protected branch: ${feature_name}" >&2
+  exit 1
+fi
+
+worktree_path="../ydb-${feature_name}"
+ide_project_dir="${HOME}/ide/ydb-${feature_name}"
+
+# Must be at the main repo root (`.git` is a directory; worktrees use a `.git` file).
+if [[ ! -d .git ]]; then
+  echo "error: run this from the main ydb repo root, not a worktree" >&2
+  exit 1
+fi
+
+repo_root=$(git rev-parse --show-toplevel)
+if [[ "$PWD" != "$repo_root" ]]; then
+  echo "error: run this from the repo root (${repo_root})" >&2
+  exit 1
+fi
+
+removed_anything=0
+
+if [[ -e "$worktree_path" ]]; then
+  echo "→ removing worktree ${worktree_path}..."
+  # No --force: fails if the worktree has uncommitted changes.
+  git worktree remove "$worktree_path"
+  removed_anything=1
+else
+  echo "→ no worktree at ${worktree_path}"
+  # Drop stale registrations if the folder was deleted by hand.
+  git worktree prune
+fi
+
+if git show-ref --verify --quiet "refs/heads/${feature_name}"; then
+  echo "→ deleting branch ${feature_name}..."
+  # -d (not -D): refuses to delete unmerged branches.
+  git branch -d "$feature_name"
+  removed_anything=1
+else
+  echo "→ no local branch ${feature_name}"
+fi
+
+if [[ -e "$ide_project_dir" ]]; then
+  echo "→ removing IDE project ${ide_project_dir}..."
+  rm -rf "$ide_project_dir"
+  removed_anything=1
+else
+  echo "→ no IDE project at ${ide_project_dir}"
+fi
+
+if [[ "$removed_anything" -eq 0 ]]; then
+  echo "nothing to remove for ${feature_name}"
+  exit 1
+fi
+
+echo "done: cleaned up ${feature_name}"

@@ -6,6 +6,25 @@
 ./install-nvim.sh
 ```
 
+## Personal scripts (`bin/`)
+
+Executable helpers live in [`bin/`](bin/) (e.g. `ydb-add-worktree` / `ydb-remove-worktree`, mirroring `git worktree add|remove`). Home Manager adds that directory via `home.sessionPath` in `nix/home/common.nix`.
+
+**Caveat:** `home.packages` binaries land in `~/.nix-profile/bin`, which Nix already puts on `PATH`. `home.sessionPath` only writes `~/.nix-profile/etc/profile.d/hm-session-vars.sh` — shells must source that file. Because this setup does not let Home Manager manage bash yet, add to `~/.bashrc`:
+
+```bash
+# Home Manager session variables (PATH for ~/dotfiles/bin, etc.)
+if [ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]; then
+  . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
+fi
+```
+
+Current shell (after `home-manager switch`):
+
+```bash
+source ~/.nix-profile/etc/profile.d/hm-session-vars.sh
+```
+
 ## Nix / Home Manager
 
 Declarative CLI tools live under [`nix/`](nix/):

@@ -1,0 +1,101 @@
+#!/usr/bin/env bash
+# Add a YDB git worktree + Cursor/ya IDE setup for a new branch.
+#
+# Usage (from the main ydb repo, not a worktree):
+#   ydb-add-worktree <feature_name> [folders_for_ya_ide...]
+#
+# Defaults for IDE folders:
+#   ./ydb/core/tx ./ydb/core/kqp/ut/olap
+
+set -euo pipefail
+
+usage() {
+  cat <<'EOF' >&2
+Usage: ydb-add-worktree <feature_name> [folders_for_ya_ide...]
+
+Must be run from the main ydb repository (not a worktree).
+
+Examples:
+  ydb-add-worktree my-feature
+  ydb-add-worktree my-feature ./ydb/core/tx ./ydb/core/kqp/ut/olap
+EOF
+  exit 1
+}
+
+if [[ $# -lt 1 ]]; then
+  usage
+fi
+
+feature_name=$1
+shift
+
+if [[ $# -gt 0 ]]; then
+  folders=("$@")
+else
+  folders=(./ydb/core/tx ./ydb/core/kqp/ut/olap)
+fi
+
+worktree_path="../ydb-${feature_name}"
+ide_project_dir="${HOME}/ide/ydb-${feature_name}"
+workspace_name="ydb-${feature_name}"
+
+# Must be at the main repo root (`.git` is a directory; worktrees use a `.git` file).
+if [[ ! -d .git ]]; then
+  echo "error: run this from the main ydb repo root, not a worktree" >&2
+  exit 1
+fi
+
+repo_root=$(git rev-parse --show-toplevel)
+if [[ "$PWD" != "$repo_root" ]]; then
+  echo "error: run this from the repo root (${repo_root})" >&2
+  exit 1
+fi
+
+if [[ -e "$worktree_path" ]]; then
+  echo "error: worktree path already exists: ${worktree_path}" >&2
+  exit 1
+fi
+
+if git show-ref --verify --quiet "refs/heads/${feature_name}"; then
+  echo "error: branch already exists: ${feature_name}" >&2
+  exit 1
+fi
+
+current_branch=$(git branch --show-current)
+if [[ "$current_branch" == "main" ]]; then
+  echo "→ on main; pulling from official..."
+  git pull --ff-only official main
+else
+  echo "→ fetching official main into local main..."
+  git fetch official main:main
+  echo "→ switching to main..."
+  git switch main
+fi
+
+echo "→ creating worktree ${worktree_path} (branch ${feature_name})..."
+git worktree add -b "$feature_name" "$worktree_path"
+
+echo "→ initializing ya IDE project in ${worktree_path}..."
+(
+  cd "$worktree_path"
+  ya ide vscode \
+    --cursor \
+    --cpp \
+    -P "$ide_project_dir" \
+    -W "$workspace_name" \
+    --use-arcadia-root \
+    "${folders[@]}"
+
+  echo "→ linking compile_commands.json..."
+  ln -s "${ide_project_dir}/compile_commands.json" compile_commands.json
+
+  echo "→ linking .cursorignore..."
+  ln -s ../.cursorignore .cursorignore
+
+  # -f: replace an existing .cursorindexingignore (file or symlink)
+  echo "→ linking .cursorindexingignore..."
+  ln -s .cursorindexingignore-personal .cursorindexingignore
+)
+
+echo "done: ${worktree_path} (branch ${feature_name})"
+echo "cd ${worktree_path}"

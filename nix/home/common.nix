@@ -1,4 +1,4 @@
-{ pkgs, ... }:
+{ pkgs, config, ... }:
 {
   # Shared packages for every machine. Host files add more via home.packages.
   home.packages = with pkgs; [
@@ -9,6 +9,11 @@
     go # mason builds some LSPs (e.g. sqls) with `go`
     python3 # newer than macOS system Python; plugins/tools that call python3
     nodejs # mason / some LSPs and formatters install or run via npm/node
+  ];
+
+  # Personal CLIs from this repo (clone at ~/dotfiles).
+  home.sessionPath = [
+    "${config.home.homeDirectory}/dotfiles/bin"
   ];
 
   # Let Home Manager manage its own bindings; don't rewrite the whole bashrc yet.
