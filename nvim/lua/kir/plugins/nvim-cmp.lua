@@ -14,6 +14,7 @@ return {
       "saadparwaiz1/cmp_luasnip", -- for autocompletion
       "rafamadriz/friendly-snippets", -- useful snippets
       "onsails/lspkind.nvim", -- vs-code like pictograms
+      "p00f/clangd_extensions.nvim", -- cmp_scores comparator
     },
     config = function()
       local cmp = require("cmp")
@@ -50,6 +51,20 @@ return {
           { name = "buffer" }, -- text within current buffer
           { name = "path" }, -- file system paths
         }),
+
+        -- Keep clangd's quality score in client-side re-ranking as you type.
+        sorting = {
+          comparators = {
+            cmp.config.compare.offset,
+            cmp.config.compare.exact,
+            cmp.config.compare.recently_used,
+            require("clangd_extensions.cmp_scores"),
+            cmp.config.compare.kind,
+            cmp.config.compare.sort_text,
+            cmp.config.compare.length,
+            cmp.config.compare.order,
+          },
+        },
   
         -- configure lspkind for vs-code like pictograms in completion menu
         formatting = {
