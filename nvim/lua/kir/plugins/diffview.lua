@@ -12,7 +12,7 @@ return {
   },
   keys = {
     { "<leader>gd", "<cmd>DiffviewOpen<CR>", desc = "Open diffview" },
-    { "<leader>gq", "<cmd>DiffviewClose<CR>", desc = "Close diffview" },
+    { "<leader>gc", "<cmd>DiffviewClose<CR>", desc = "Close diffview" },
     { "<leader>gh", "<cmd>DiffviewFileHistory<CR>", desc = "File history (repo)" },
     { "<leader>gf", "<cmd>DiffviewFileHistory %<CR>", desc = "File history (current file)" },
   },
