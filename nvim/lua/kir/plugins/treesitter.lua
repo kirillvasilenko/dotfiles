@@ -34,7 +34,14 @@ return {
     vim.api.nvim_create_autocmd("FileType", {
       callback = function(args)
         pcall(vim.treesitter.start, args.buf)
-        vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+        local ft = vim.bo[args.buf].filetype
+        -- Treesitter indent is unreliable for C/C++ (e.g. `o` inside struct bodies).
+        if ft == "c" or ft == "cpp" then
+          vim.bo[args.buf].indentexpr = ""
+          vim.bo[args.buf].cindent = true
+        else
+          vim.bo[args.buf].indentexpr = "v:lua.require'nvim-treesitter'.indentexpr()"
+        end
       end,
     })
   end,
