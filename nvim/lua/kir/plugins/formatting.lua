@@ -22,16 +22,28 @@ return {
         c = { "clang_format" },
         cpp = { "clang_format" },
       },
-      format_on_save = {
-        lsp_fallback = true,
-        async = false,
-        timeout_ms = 1000,
+      formatters = {
+        clang_format = {
+          -- Without a .clang-format in the tree, do nothing (no LLVM defaults).
+          prepend_args = { "--fallback-style=none" },
+        },
       },
+      -- C/C++: don't format on save — Mason clang-format drifts from the
+      -- repo pre-commit formatter. Use the hook (or <leader>cf) instead.
+      format_on_save = function(bufnr)
+        local ft = vim.bo[bufnr].filetype
+        if ft == "c" or ft == "cpp" then
+          return
+        end
+        return {
+          async = false,
+          timeout_ms = 1000,
+        }
+      end,
     })
 
     vim.keymap.set({ "n", "v" }, "<leader>cf", function()
       conform.format({
-        lsp_fallback = true,
         async = false,
         timeout_ms = 1000,
       })
