@@ -75,12 +75,105 @@ return {
       end
     end
 
+    -- Trouble uses buftype=nofile, so :mksession restores an empty split.
+    -- Snapshot modes, close before save, reopen after save/restore.
+    ---@type { mode: string, size: number? }[]
+    local session_trouble_modes = {}
+
+    local function trouble_is_loaded()
+      return package.loaded["trouble"]
+        or package.loaded["trouble.view"]
+        or package.loaded["trouble.api"]
+    end
+
+    ---@return { mode: string, size: number? }[]
+    local function snapshot_trouble()
+      if not trouble_is_loaded() then
+        return {}
+      end
+      local ok, View = pcall(require, "trouble.view")
+      if not ok then
+        return {}
+      end
+      local modes = {}
+      for _, v in ipairs(View.get({ open = true })) do
+        if type(v.mode) == "string" and v.mode ~= "" then
+          local entry = { mode = v.mode }
+          local win = v.view.win and v.view.win.win
+          if win and vim.api.nvim_win_is_valid(win) then
+            local pos = v.view.opts.win and v.view.opts.win.position
+            if pos == "top" or pos == "bottom" then
+              entry.size = vim.api.nvim_win_get_height(win)
+            else
+              entry.size = vim.api.nvim_win_get_width(win)
+            end
+          end
+          modes[#modes + 1] = entry
+        end
+      end
+      return modes
+    end
+
+    local function close_trouble_views()
+      if not trouble_is_loaded() then
+        return
+      end
+      local ok, View = pcall(require, "trouble.view")
+      if not ok then
+        return
+      end
+      for _, v in ipairs(View.get({ open = true })) do
+        v.view:close()
+      end
+    end
+
+    local function close_trouble_ghosts()
+      for _, tab in ipairs(vim.api.nvim_list_tabpages()) do
+        for _, win in ipairs(vim.api.nvim_tabpage_list_wins(tab)) do
+          local buf = vim.api.nvim_win_get_buf(win)
+          if vim.bo[buf].filetype == "trouble" then
+            pcall(vim.api.nvim_win_close, win, true)
+          end
+        end
+      end
+    end
+
+    local function restore_trouble()
+      close_trouble_ghosts()
+      local modes = session_trouble_modes
+      if vim.tbl_isempty(modes) then
+        return
+      end
+      local ok, trouble = pcall(require, "trouble")
+      if not ok then
+        return
+      end
+      for _, entry in ipairs(modes) do
+        local mode = type(entry) == "table" and entry.mode or entry
+        if type(mode) == "string" and mode ~= "" then
+          local opts = {
+            mode = mode,
+            focus = false,
+            -- LSP may not be attached yet; open empty and let Trouble refresh.
+            open_no_results = true,
+            warn_no_results = false,
+          }
+          if type(entry) == "table" and type(entry.size) == "number" then
+            opts.win = { size = entry.size }
+          end
+          trouble.open(opts)
+        end
+      end
+    end
+
     auto_session.setup({
       auto_restore_enabled = false,
       auto_session_suppress_dirs = { "~/", "~/Dev/", "~/Downloads", "~/Documents", "~/Desktop/" },
       -- Don't use built-in close_unsupported_windows: it runs before pre_save on
       -- exit and would always record the tree as closed. We only store a flag;
       -- post_restore applies open/closed. Keep the tree open during save.
+      -- Trouble is closed in pre_save (empty nofile split is useless) and
+      -- reopened in post_save / post_restore.
       close_unsupported_windows = false,
       pre_save_cmds = {
         function()
@@ -90,11 +183,17 @@ return {
           else
             vim.g._session_nvim_tree_open = false
           end
+          session_trouble_modes = snapshot_trouble()
+          close_trouble_views()
         end,
+      },
+      post_save_cmds = {
+        restore_trouble,
       },
       save_extra_data = function(_)
         local payload = {
           nvim_tree_open = vim.g._session_nvim_tree_open and true or false,
+          trouble_modes = session_trouble_modes,
         }
         local qf = qflist_stack_payload()
         if qf then
@@ -109,12 +208,17 @@ return {
           return
         end
         vim.g._session_nvim_tree_open = decoded.nvim_tree_open and true or false
+        session_trouble_modes = type(decoded.trouble_modes) == "table" and decoded.trouble_modes
+          or {}
         restore_qflist_stack(decoded)
       end,
       post_restore_cmds = {
         function()
           -- Schedule so we win against nvim-tree directory hijack during restore.
-          vim.schedule(restore_nvim_tree)
+          vim.schedule(function()
+            restore_nvim_tree()
+            restore_trouble()
+          end)
         end,
       },
     })
