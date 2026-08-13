@@ -40,7 +40,7 @@ return {
         --
         -- Find usages / symbols
         -- grr         [nvim]    LSP references (Telescope)          nvim: vim.lsp.buf.references() → quickfix
-        -- gO          [nvim]    document symbols (Telescope)        nvim: vim.lsp.buf.document_symbol()
+        -- gO          [nvim]    document symbols (Trouble)          nvim: vim.lsp.buf.document_symbol()
         --
         -- Refactor / actions
         -- grn         [nvim]    (unchanged — native)                nvim: vim.lsp.buf.rename()
@@ -54,8 +54,8 @@ return {
         -- Diagnostics
         -- [d ]d       [nvim]    (unchanged — native)                nvim: prev / next diagnostic
         -- [D ]D       [nvim]    (unchanged — native)                nvim: first / last diagnostic
-        -- <leader>d   [custom]  line diagnostics float              unbound
-        -- <leader>D   [custom]  buffer diagnostics (Telescope)      unbound
+        -- <leader>xd  [custom]  line diagnostics float              unbound
+        -- <leader>xD  [custom]  buffer diagnostics (Telescope)      unbound
         --
         -- Misc
         -- <leader>rs  [custom]  restart LSP client                  unbound
@@ -91,16 +91,16 @@ return {
         keymap.set("n", "grr", telescope_builtin.lsp_references, opts)
 
         opts.desc = "Show document symbols"
-        keymap.set("n", "gO", telescope_builtin.lsp_document_symbols, opts)
+        keymap.set("n", "gO", "<cmd>Trouble symbols toggle<CR>", opts)
 
         ----------------------------------------------------------------------
         -- Diagnostics
         ----------------------------------------------------------------------
         opts.desc = "Show line diagnostics"
-        keymap.set("n", "<leader>d", vim.diagnostic.open_float, opts)
+        keymap.set("n", "<leader>xd", vim.diagnostic.open_float, opts)
 
         opts.desc = "Show buffer diagnostics"
-        keymap.set("n", "<leader>D", function()
+        keymap.set("n", "<leader>xD", function()
           telescope_builtin.diagnostics({ bufnr = 0 })
         end, opts)
 
