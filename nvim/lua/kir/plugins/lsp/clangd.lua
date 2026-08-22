@@ -33,10 +33,9 @@ return {
         opts.desc = "Switch source/header"
         keymap.set("n", "grs", vim.cmd.LspClangdSwitchSourceHeader, opts)
 
-        if client:supports_method("textDocument/prepareTypeHierarchy", ev.buf) then
-          opts.desc = "Type hierarchy"
-          keymap.set("n", "grh", require("kir.lsp.type_hierarchy").show, opts)
-        end
+        -- Custom textDocument/typeHierarchy, not the standard prepareTypeHierarchy.
+        opts.desc = "Type hierarchy"
+        keymap.set("n", "grh", require("kir.lsp.type_hierarchy").show, opts)
       end,
     })
   end,

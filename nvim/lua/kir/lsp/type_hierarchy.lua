@@ -19,13 +19,14 @@ end
 local function qualified_name(node)
   local name = node.name or "?"
   local detail = node.detail
-  if type(detail) == "string" and detail ~= "" and detail ~= name then
-    if detail:sub(-#name) == name then
-      return detail
-    end
-    return detail .. "::" .. name
+  if type(detail) ~= "string" or detail == "" or detail == name then
+    return name
   end
-  return name
+  -- Require "::name" so "MyHandler" is not treated as qualified "Handler".
+  if detail:sub(-(#name + 2)) == "::" .. name then
+    return detail
+  end
+  return detail .. "::" .. name
 end
 
 local function file_path(node)
@@ -92,10 +93,10 @@ local function sorted_nodes(nodes)
 end
 
 local function visit_key(node)
-  if type(node.data) == "string" and node.data ~= "" then
-    return node.data
-  end
-  local start = node.range and node.range.start
+  -- Location only: the same type can appear with and without `data`, which
+  -- would look like two nodes and recurse until the stack blows.
+  local range = node.selectionRange or node.range
+  local start = range and range.start
   return table.concat({
     node.uri or "",
     node.name or "",
@@ -107,7 +108,7 @@ end
 local function format_tree(node, visited, result, padding, type_to_location)
   visited[visit_key(node)] = true
 
-  local location = { uri = node.uri, range = node.range }
+  local location = { uri = node.uri, range = node.selectionRange or node.range }
   table.insert(result, padding .. (" • %s: %s"):format(qualified_name(node), kind_name(node.kind)))
   type_to_location[#result] = location
   local path = file_path(node)
@@ -116,19 +117,19 @@ local function format_tree(node, visited, result, padding, type_to_location)
     type_to_location[#result] = location
   end
 
-  if node.parents and #node.parents > 0 then
+  if type(node.parents) == "table" and #node.parents > 0 then
     table.insert(result, padding .. "   Parents:")
     for _, parent in ipairs(sorted_nodes(node.parents)) do
-      if not visited[visit_key(parent)] then
+      if type(parent) == "table" and not visited[visit_key(parent)] then
         format_tree(parent, visited, result, padding .. "   ", type_to_location)
       end
     end
   end
 
-  if node.children and #node.children > 0 then
+  if type(node.children) == "table" and #node.children > 0 then
     table.insert(result, padding .. "   Children:")
     for _, child in ipairs(sorted_nodes(node.children)) do
-      if not visited[visit_key(child)] then
+      if type(child) == "table" and not visited[visit_key(child)] then
         format_tree(child, visited, result, padding .. "   ", type_to_location)
       end
     end
@@ -137,16 +138,33 @@ local function format_tree(node, visited, result, padding, type_to_location)
   return result
 end
 
-local function jump_from(bufnr, source_win, client_id)
+local function jump_from(bufnr, source_win, source_buf, client_id)
   local line = api.nvim_win_get_cursor(0)[1]
   local location = M.type_to_location[bufnr] and M.type_to_location[bufnr][line]
-  if not location then
+  if not location or not location.uri then
     return
   end
-  if api.nvim_win_is_valid(source_win) then
-    api.nvim_set_current_win(source_win)
+  local range = location.range
+  if type(range) ~= "table" or type(range.start) ~= "table" then
+    return
   end
-  vim.lsp.util.show_document(location, M.offset_encoding[client_id], { focus = true })
+  -- Window ids are reused. Only trust source_win if it still shows the file.
+  local win
+  if api.nvim_win_is_valid(source_win) and api.nvim_win_get_buf(source_win) == source_buf then
+    win = source_win
+  else
+    win = vim.fn.win_findbuf(source_buf)[1]
+  end
+  if win and win ~= 0 then
+    api.nvim_set_current_win(win)
+  else
+    vim.cmd.split()
+  end
+  vim.lsp.util.show_document(
+    location,
+    M.offset_encoding[client_id] or "utf-16",
+    { focus = true }
+  )
 end
 
 ---@param result table clangd TypeHierarchyItem or a list of them
@@ -160,40 +178,64 @@ local function root_item(result)
   return nil
 end
 
-local function render_tree(root, client_id, source_win)
+local function render_tree(root, client_id, source_win, source_buf)
   local client = vim.lsp.get_clients({ id = client_id })[1]
-  if not client then
-    return
+  if client then
+    M.offset_encoding[client_id] = client.offset_encoding
   end
-
-  M.offset_encoding[client_id] = client.offset_encoding
-  vim.cmd.split(("%s: type hierarchy"):format(qualified_name(root)))
-  local bufnr = api.nvim_get_current_buf()
+  -- Open next to the file we invoked from, not whatever window is current
+  -- by the time clangd answers.
+  if api.nvim_win_is_valid(source_win) then
+    api.nvim_set_current_win(source_win)
+  end
+  -- :split with no name reuses the source buffer. The plugin uses
+  -- :split <name> to get a new buffer; do the same with an explicit scratch.
+  vim.cmd.split()
+  local win = api.nvim_get_current_win()
+  local bufnr = api.nvim_create_buf(false, true)
+  api.nvim_win_set_buf(win, bufnr)
+  local name = qualified_name(root) .. " [type hierarchy]"
+  if vim.fn.bufexists(name) == 1 then
+    name = name .. " " .. bufnr
+  end
+  pcall(api.nvim_buf_set_name, bufnr, name)
   M.type_to_location[bufnr] = {}
 
   local lines = format_tree(root, {}, {}, "", M.type_to_location[bufnr])
   api.nvim_buf_set_lines(bufnr, 0, -1, true, lines)
 
-  vim.bo.modifiable = false
-  vim.bo.filetype = "ClangdTypeHierarchy"
-  vim.bo.buftype = "nofile"
-  vim.bo.bufhidden = "wipe"
-  vim.bo.buflisted = true
-  vim.wo.number = false
-  vim.wo.relativenumber = false
-  vim.wo.spell = false
-  vim.wo.cursorline = true
-  api.nvim_win_set_height(0, math.min(#lines, 15))
+  local function buf_opt(name_, value)
+    api.nvim_set_option_value(name_, value, { buf = bufnr })
+  end
+  local function win_opt(name_, value)
+    api.nvim_set_option_value(name_, value, { win = win })
+  end
+  buf_opt("modifiable", false)
+  buf_opt("filetype", "ClangdTypeHierarchy")
+  buf_opt("buftype", "nofile")
+  buf_opt("bufhidden", "wipe")
+  buf_opt("buflisted", false)
+  win_opt("number", false)
+  win_opt("relativenumber", false)
+  win_opt("spell", false)
+  win_opt("cursorline", true)
+  api.nvim_win_set_height(win, math.min(#lines, 20))
 
-  vim.cmd([[
-    syntax clear
-    syntax match ClangdTypeName "\(• \)\@<=.\+\(: \)\@="
-  ]])
+  pcall(api.nvim_buf_call, bufnr, function()
+    vim.cmd([[
+      syntax clear
+      syntax match ClangdTypeName "\(• \)\@<=.\+\(: \)\@="
+    ]])
+  end)
   api.nvim_set_hl(0, "ClangdTypeName", { link = "Underlined" })
 
   vim.keymap.set("n", "gd", function()
-    jump_from(bufnr, source_win, client_id)
+    jump_from(bufnr, source_win, source_buf, client_id)
   end, { buffer = bufnr, desc = "Go to type under cursor" })
+
+  vim.keymap.set("n", "q", function()
+    pcall(api.nvim_win_close, 0, true)
+  end, { buffer = bufnr, desc = "Close type hierarchy" })
 
   api.nvim_create_autocmd("BufWipeout", {
     buffer = bufnr,
@@ -204,50 +246,58 @@ local function render_tree(root, client_id, source_win)
   })
 end
 
-local function handler(err, result, ctx, pos_params)
-  if err then
-    vim.notify(err.message or "Type hierarchy failed", vim.log.levels.ERROR)
+local function handler(err, result, ctx, pos_params, source_win, source_buf)
+  -- LSP null is vim.NIL, which is truthy. Do not index it.
+  if err ~= nil and err ~= vim.NIL then
+    local msg = type(err) == "table" and err.message or nil
+    vim.notify(msg or "Type hierarchy failed", vim.log.levels.ERROR)
     return
   end
 
-  local root = result and root_item(result)
+  if result == nil or result == vim.NIL then
+    vim.notify("No type hierarchy for this symbol", vim.log.levels.INFO)
+    return
+  end
+
+  local root = root_item(result)
   if not root then
     vim.notify("No type hierarchy for this symbol", vim.log.levels.INFO)
     return
   end
 
   local client_id = ctx.client_id
-  local source_win = api.nvim_get_current_win()
   local client = vim.lsp.get_clients({ id = client_id })[1]
-  if not client then
-    return
-  end
 
   local function finish()
-    render_tree(root, client_id, source_win)
+    render_tree(root, client_id, source_win, source_buf)
   end
 
-  if qualified_name(root) ~= (root.name or "?") then
+  if not client or qualified_name(root) ~= (root.name or "?") then
     finish()
     return
   end
 
-  client:request("textDocument/symbolInfo", {
+  -- If the follow-up is gated, the callback never runs — still show the tree.
+  local sent = client:request("textDocument/symbolInfo", {
     textDocument = pos_params.textDocument,
     position = pos_params.position,
   }, function(si_err, si_result)
-    if not si_err and type(si_result) == "table" then
+    if (si_err == nil or si_err == vim.NIL) and type(si_result) == "table" then
       apply_root_name(root, si_result[1])
     end
     finish()
-  end, ctx.bufnr)
+  end, source_buf)
+  if not sent then
+    finish()
+  end
 end
 
 function M.show()
   local bufnr = api.nvim_get_current_buf()
+  local source_win = api.nvim_get_current_win()
   local client = vim.lsp.get_clients({ bufnr = bufnr, name = "clangd" })[1]
   if not client then
-    vim.notify("No clangd client", vim.log.levels.WARN)
+    vim.notify("No clangd client", vim.log.levels.ERROR)
     return
   end
 
@@ -258,7 +308,7 @@ function M.show()
   })
 
   client:request("textDocument/typeHierarchy", params, function(err, result, ctx)
-    handler(err, result, ctx, pos_params)
+    handler(err, result, ctx, pos_params, source_win, bufnr)
   end, bufnr)
 end
 

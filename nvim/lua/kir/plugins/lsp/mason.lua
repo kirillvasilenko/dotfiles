@@ -14,6 +14,15 @@ return {
       capabilities = capabilities,
     })
 
+    -- Must be registered before clangd starts, or we miss fileStatus / index progress.
+    require("kir.lsp.clangd_ready")
+
+    vim.lsp.config("clangd", {
+      init_options = {
+        clangdFileStatus = true,
+      },
+    })
+
     vim.lsp.config("lua_ls", {
       settings = {
         Lua = {

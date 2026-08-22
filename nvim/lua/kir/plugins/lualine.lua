@@ -19,6 +19,25 @@ return {
             lazy_status.updates,
             cond = lazy_status.has_updates,
           },
+          {
+            function()
+              local st = require("kir.lsp.clangd_ready").status()
+              if st == "ready" then
+                return "● LSP"
+              end
+              if st == "not_ready" then
+                return "○ LSP"
+              end
+              return ""
+            end,
+            color = function()
+              local st = require("kir.lsp.clangd_ready").status()
+              return st == "ready" and "DiagnosticOk" or "DiagnosticWarn"
+            end,
+            cond = function()
+              return require("kir.lsp.clangd_ready").status() ~= nil
+            end,
+          },
           { "encoding" },
           { "fileformat" },
           { "filetype" },
@@ -29,6 +48,13 @@ return {
     -- force statusline refresh on mode change (avoids stale NORMAL in visual)
     vim.api.nvim_create_autocmd("ModeChanged", {
       pattern = "*:*",
+      callback = function()
+        lualine.refresh({ place = { "statusline" } })
+      end,
+    })
+
+    vim.api.nvim_create_autocmd("User", {
+      pattern = "KirClangdReady",
       callback = function()
         lualine.refresh({ place = { "statusline" } })
       end,
