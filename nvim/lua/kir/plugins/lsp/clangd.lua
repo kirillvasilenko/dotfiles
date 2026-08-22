@@ -5,6 +5,10 @@ return {
     -- Defaults are fine; mason already enables clangd + cmp capabilities.
     require("clangd_extensions").setup({})
 
+    vim.api.nvim_create_user_command("ClangdTypeHierarchy", function()
+      require("kir.lsp.type_hierarchy").show()
+    end, { desc = "Type hierarchy", force = true })
+
     local keymap = vim.keymap
 
     vim.api.nvim_create_autocmd("LspAttach", {
@@ -24,14 +28,14 @@ return {
         -- key         source    our mapping                         previous behavior
         -- ----------  --------  ----------------------------------  ------------------------------------------
         -- grs         [custom]  :LspClangdSwitchSourceHeader         unbound (Vim: virtual-replace "s")
-        -- grh         [custom]  type hierarchy (clangd_extensions)  unbound (Vim: virtual-replace "h")
+        -- grh         [custom]  type hierarchy (kir.lsp.type_hierarchy)  unbound (Vim: virtual-replace "h")
 
         opts.desc = "Switch source/header"
         keymap.set("n", "grs", vim.cmd.LspClangdSwitchSourceHeader, opts)
 
         if client:supports_method("textDocument/prepareTypeHierarchy", ev.buf) then
           opts.desc = "Type hierarchy"
-          keymap.set("n", "grh", vim.cmd.ClangdTypeHierarchy, opts)
+          keymap.set("n", "grh", require("kir.lsp.type_hierarchy").show, opts)
         end
       end,
     })
