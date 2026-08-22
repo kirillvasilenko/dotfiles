@@ -7,6 +7,7 @@ return {
 
     gs.setup({
       attach_to_untracked = true,
+      signs_staged_enable = false,
       on_attach = function(bufnr)
         local function map(mode, l, r, desc)
           vim.keymap.set(mode, l, r, { buffer = bufnr, desc = desc })

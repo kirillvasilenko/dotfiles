@@ -19,6 +19,9 @@ return {
       vim.api.nvim_create_autocmd({ "BufEnter", "BufWritePost", "InsertLeave" }, {
         group = lint_augroup,
         callback = function()
+          if vim.bo.buftype ~= "" then
+            return
+          end
           lint.try_lint()
         end,
       })
