@@ -3,6 +3,7 @@
   # Shared packages for every machine. Host files add more via home.packages.
   home.packages = with pkgs; [
     neovim
+    tmux # 3.5+; system /usr/bin/tmux is 3.0a and drops OSC 11 / truecolor
     ripgrep
     fd # fast find; handy for telescope / CLI search
     tree-sitter # CLI required by nvim-treesitter (main) to build parsers
