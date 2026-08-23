@@ -3,6 +3,12 @@ return {
   dependencies = { "nvim-tree/nvim-web-devicons", "folke/todo-comments.nvim" },
   opts = {
     focus = true,
+    modes = {
+      -- default right-split is 30; 30 C-w-< from the editor is +30
+      symbols = {
+        win = { position = "right", size = 60 },
+      },
+    },
   },
   cmd = "Trouble",
   keys = {
