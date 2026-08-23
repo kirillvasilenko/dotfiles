@@ -1,0 +1,92 @@
+# Shared clangd config for YDB worktrees (symlinked by ydb-add-worktree).
+# Index.Background: Skip only drops those TUs from the project index.
+# Includes, hover, and an opened file still compile.
+#
+# PathMatch is relative to the worktree root and must fully match
+# (contrib/foo.cpp, not /home/.../contrib/foo.cpp).
+#
+# Shares are unique-file / CDB-row estimates from a columnshard-style
+# compile_commands.json. Uncomment a fragment (including the ---) to skip more.
+
+# contrib/ — ~56% of TUs
+If:
+  PathMatch: contrib/.*
+Index:
+  Background: Skip
+
+---
+# yql/ (repo root; not ydb/library/yql) — ~6%
+If:
+  PathMatch: yql/.*
+Index:
+  Background: Skip
+
+---
+# yt/ (repo root; not library/cpp/yt) — ~3%
+If:
+  PathMatch: yt/.*
+Index:
+  Background: Skip
+
+---
+# ydb/library/yql — ~3% (DQ compute-actor PEERDIR; mostly UDFs/providers)
+If:
+  PathMatch: ydb/library/yql/.*
+Index:
+  Background: Skip
+
+---
+# ydb/public/sdk — ~1%
+If:
+  PathMatch: ydb/public/sdk/.*
+Index:
+  Background: Skip
+
+# ---
+# # library/ (arcadia helpers: monlib, getopt, … — NOT THashMap/TVector; those are util/) — ~3%
+# If:
+#   PathMatch: library/.*
+# Index:
+#   Background: Skip
+
+# ---
+# # ydb/core/fq — ~1% (Federated Query / YQ; testlib/kqp hairball)
+# If:
+#   PathMatch: ydb/core/fq/.*
+# Index:
+#   Background: Skip
+
+# ---
+# # ydb/core/nbs — ~1% (Network Block Store)
+# If:
+#   PathMatch: ydb/core/nbs/.*
+# Index:
+#   Background: Skip
+
+# ---
+# # ydb/core/mind — ~1% (Hive / tablet mind)
+# If:
+#   PathMatch: ydb/core/mind/.*
+# Index:
+#   Background: Skip
+
+# ---
+# # ydb/core/persqueue — ~1% (topics)
+# If:
+#   PathMatch: ydb/core/persqueue/.*
+# Index:
+#   Background: Skip
+
+# ---
+# # ydb/core/ymq — ~0.5% (Yandex Message Queue)
+# If:
+#   PathMatch: ydb/core/ymq/.*
+# Index:
+#   Background: Skip
+
+# ---
+# # ydb/core/cms — ~0.5% (cluster config; columnshard PEERDIRs cms/console)
+# If:
+#   PathMatch: ydb/core/cms/.*
+# Index:
+#   Background: Skip

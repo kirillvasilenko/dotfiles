@@ -18,6 +18,12 @@ return {
     require("kir.lsp.clangd_ready")
 
     vim.lsp.config("clangd", {
+      cmd = {
+        "clangd",
+        "--enable-config",
+        "--pch-storage=disk",
+        "-j=64",
+      },
       init_options = {
         clangdFileStatus = true,
       },

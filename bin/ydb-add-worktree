@@ -39,6 +39,12 @@ worktree_path="../ydb-${feature_name}"
 ide_project_dir="${HOME}/ide/ydb-${feature_name}"
 workspace_name="ydb-${feature_name}"
 
+clangd_src="${HOME}/dotfiles/ydb/.clangd"
+if [[ ! -f "$clangd_src" ]]; then
+  echo "error: missing shared clangd config: ${clangd_src}" >&2
+  exit 1
+fi
+
 # Must be at the main repo root (`.git` is a directory; worktrees use a `.git` file).
 if [[ ! -d .git ]]; then
   echo "error: run this from the main ydb repo root, not a worktree" >&2
@@ -88,6 +94,9 @@ echo "→ initializing ya IDE project in ${worktree_path}..."
 
   echo "→ linking compile_commands.json..."
   ln -s "${ide_project_dir}/compile_commands.json" compile_commands.json
+
+  echo "→ linking .clangd..."
+  ln -s "${clangd_src}" .clangd
 
   echo "→ linking .cursorignore..."
   ln -s ../.cursorignore .cursorignore
