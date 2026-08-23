@@ -3,7 +3,14 @@
 local schemes = { dark = "tokyonight-moon", light = "tokyonight-day" }
 
 local function apply()
-  vim.cmd.colorscheme(schemes[vim.o.background])
+  local name = schemes[vim.o.background]
+  if not name then
+    return
+  end
+  vim.cmd.colorscheme(name)
+  pcall(function()
+    require("lualine").refresh({ place = { "statusline" } })
+  end)
 end
 
 local function set_bg(want)
@@ -21,10 +28,3 @@ end, { nargs = "?" })
 vim.keymap.set("n", "<leader>cb", function()
   set_bg()
 end, { desc = "Toggle light/dark theme" })
-
--- kir.core loads before lazy, so wait for tokyonight.
-vim.api.nvim_create_autocmd("User", {
-  pattern = "LazyDone",
-  once = true,
-  callback = apply,
-})
