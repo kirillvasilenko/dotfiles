@@ -4,6 +4,7 @@ return {
   config = function()
     local gs = require("gitsigns")
     local review_mode = false
+    local review_base_main = false
 
     gs.setup({
       attach_to_untracked = true,
@@ -47,6 +48,14 @@ return {
           gs.blame_line({ full = true })
         end, "Blame line")
         map("n", "<leader>hB", gs.toggle_current_line_blame, "Toggle line blame")
+        map("n", "<leader>hm", function()
+          review_base_main = not review_base_main
+          if review_base_main then
+            gs.change_base("main", true)
+          else
+            gs.reset_base(true)
+          end
+        end, "Toggle hunks vs main")
 
         map("n", "<leader>hd", gs.diffthis, "Diff this")
         map("n", "<leader>hD", function()
