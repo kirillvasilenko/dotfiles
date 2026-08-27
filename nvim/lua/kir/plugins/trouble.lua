@@ -6,6 +6,8 @@ return {
     modes = {
       -- default right-split is 30; 30 C-w-< from the editor is +30
       symbols = {
+        -- mode default is focus=false (sidebar); gO should land in the list
+        focus = true,
         win = { position = "right", size = 60 },
       },
     },

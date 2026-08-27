@@ -91,7 +91,7 @@ return {
         keymap.set("n", "grr", telescope_builtin.lsp_references, opts)
 
         opts.desc = "Show document symbols"
-        keymap.set("n", "gO", "<cmd>Trouble symbols toggle<CR>", opts)
+        keymap.set("n", "gO", "<cmd>Trouble symbols<CR>", opts)
 
         ----------------------------------------------------------------------
         -- Diagnostics
