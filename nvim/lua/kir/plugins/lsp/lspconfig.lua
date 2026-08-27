@@ -10,8 +10,21 @@ return {
     local telescope_builtin = require("telescope.builtin")
     local keymap = vim.keymap
 
+    -- clangd rejects textDocument/inlayHint unless textDocument.uri is file://.
+    -- Diffview (and other special buffers) still get a cpp filetype + clangd attach.
+    local function is_file_document(bufnr)
+      if vim.bo[bufnr].buftype ~= "" then
+        return false
+      end
+      local ok, uri = pcall(vim.uri_from_bufnr, bufnr)
+      return ok and type(uri) == "string" and uri:match("^file://") ~= nil
+    end
+
     local function toggle_inlay_hints()
       local bufnr = vim.api.nvim_get_current_buf()
+      if not is_file_document(bufnr) then
+        return
+      end
       local enabled = vim.lsp.inlay_hint.is_enabled({ bufnr = bufnr })
       vim.lsp.inlay_hint.enable(not enabled, { bufnr = bufnr })
     end
@@ -65,7 +78,11 @@ return {
         -- Clangd-only (see kir/plugins/lsp/clangd.lua): grs, grh
 
         local client = vim.lsp.get_client_by_id(ev.data.client_id)
-        if client and client:supports_method("textDocument/inlayHint", ev.buf) then
+        if
+          client
+          and client:supports_method("textDocument/inlayHint", ev.buf)
+          and is_file_document(ev.buf)
+        then
           vim.lsp.inlay_hint.enable(true, { bufnr = ev.buf })
         end
 
