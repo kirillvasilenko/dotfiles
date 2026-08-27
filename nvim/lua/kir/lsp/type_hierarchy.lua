@@ -138,7 +138,29 @@ local function format_tree(node, visited, result, padding, type_to_location)
   return result
 end
 
-local function jump_from(bufnr, source_win, source_buf, client_id)
+--- Prefer the editor window we split from. After the first gd that window
+--- usually shows a different file; still reuse it. Split only if no other
+--- normal window is left in this tab.
+local function pick_jump_win(hier_win, source_win, source_buf)
+  if api.nvim_win_is_valid(source_win) and source_win ~= hier_win then
+    return source_win
+  end
+  local found = vim.fn.win_findbuf(source_buf)[1]
+  if found and found ~= 0 and found ~= hier_win then
+    return found
+  end
+  for _, w in ipairs(api.nvim_tabpage_list_wins(0)) do
+    if w ~= hier_win then
+      local b = api.nvim_win_get_buf(w)
+      if vim.bo[b].buftype == "" then
+        return w
+      end
+    end
+  end
+  return nil
+end
+
+local function jump_from(bufnr, target, client_id)
   local line = api.nvim_win_get_cursor(0)[1]
   local location = M.type_to_location[bufnr] and M.type_to_location[bufnr][line]
   if not location or not location.uri then
@@ -148,23 +170,25 @@ local function jump_from(bufnr, source_win, source_buf, client_id)
   if type(range) ~= "table" or type(range.start) ~= "table" then
     return
   end
-  -- Window ids are reused. Only trust source_win if it still shows the file.
-  local win
-  if api.nvim_win_is_valid(source_win) and api.nvim_win_get_buf(source_win) == source_buf then
-    win = source_win
-  else
-    win = vim.fn.win_findbuf(source_buf)[1]
-  end
-  if win and win ~= 0 then
+  local hier_win = api.nvim_get_current_win()
+  local win = pick_jump_win(hier_win, target.win, target.buf)
+  if win then
     api.nvim_set_current_win(win)
   else
-    vim.cmd.split()
+    -- splitbelow would put code under the hierarchy; keep code on top.
+    vim.cmd("aboveleft split")
+    if api.nvim_win_is_valid(hier_win) then
+      api.nvim_win_set_height(hier_win, math.min(api.nvim_buf_line_count(bufnr), 20))
+    end
   end
   vim.lsp.util.show_document(
     location,
     M.offset_encoding[client_id] or "utf-16",
     { focus = true }
   )
+  -- Next gd should land in the same window, even if this jump replaced the buf.
+  target.win = api.nvim_get_current_win()
+  target.buf = api.nvim_get_current_buf()
 end
 
 ---@param result table clangd TypeHierarchyItem or a list of them
@@ -229,8 +253,12 @@ local function render_tree(root, client_id, source_win, source_buf)
   end)
   api.nvim_set_hl(0, "ClangdTypeName", { link = "Underlined" })
 
+  -- Mutable: jump_from updates win/buf after each gd so later jumps reuse
+  -- the same editor window even when it no longer shows source_buf.
+  local target = { win = source_win, buf = source_buf }
+
   vim.keymap.set("n", "gd", function()
-    jump_from(bufnr, source_win, source_buf, client_id)
+    jump_from(bufnr, target, client_id)
   end, { buffer = bufnr, desc = "Go to type under cursor" })
 
   vim.keymap.set("n", "q", function()
