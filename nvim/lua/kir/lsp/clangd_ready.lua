@@ -308,9 +308,12 @@ api.nvim_create_autocmd("LspDetach", {
   callback = function(ev)
     local id = ev.data.client_id
     local still_attached = 0
-    for _, buf in ipairs(vim.lsp.get_buffers_by_client_id(id)) do
-      if buf ~= ev.buf then
-        still_attached = still_attached + 1
+    local client = vim.lsp.get_client_by_id(id)
+    if client then
+      for buf in pairs(client.attached_buffers) do
+        if buf ~= ev.buf then
+          still_attached = still_attached + 1
+        end
       end
     end
     if still_attached == 0 then
