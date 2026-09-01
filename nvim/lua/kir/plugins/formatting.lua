@@ -23,6 +23,9 @@ return {
         cpp = { "clang_format" },
       },
       formatters = {
+        black = {
+          prepend_args = { "--line-length", "120" },
+        },
         clang_format = {
           -- Without a .clang-format in the tree, do nothing (no LLVM defaults).
           prepend_args = { "--fallback-style=none" },
@@ -42,16 +45,16 @@ return {
           },
         },
       },
-      -- C/C++: don't format on save — Mason clang-format drifts from the
-      -- repo pre-commit formatter. Use the hook (or <leader>cf) instead.
+      -- C/C++/Python: don't format on save — Mason tools drift from repo
+      -- style (ya style / flake8). Use the hook (or <leader>cf) instead.
       format_on_save = function(bufnr)
         local ft = vim.bo[bufnr].filetype
-        if ft == "c" or ft == "cpp" then
+        if ft == "c" or ft == "cpp" or ft == "python" then
           return
         end
         return {
           async = false,
-          timeout_ms = 1000,
+          timeout_ms = 5000,
         }
       end,
     })
@@ -59,7 +62,7 @@ return {
     vim.keymap.set({ "n", "v" }, "<leader>cf", function()
       conform.format({
         async = false,
-        timeout_ms = 1000,
+        timeout_ms = 5000,
       })
     end, { desc = "Format file or range (in visual mode)" })
   end,
