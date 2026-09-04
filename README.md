@@ -25,6 +25,18 @@ Current shell (after `home-manager switch`):
 source ~/.nix-profile/etc/profile.d/hm-session-vars.sh
 ```
 
+## Agent skills (`skills/`)
+
+Skills shared by every coding agent live in [`skills/`](skills/), one directory per skill with a
+`SKILL.md`. Cursor and Claude Code discover them through symlinks:
+
+```bash
+ln -s ~/dotfiles/skills ~/.cursor/skills
+ln -s ~/dotfiles/skills ~/.claude/skills
+```
+
+Codex has no skill loader; `~/.codex/AGENTS.md` points it at the directory instead.
+
 ## Nix / Home Manager
 
 Declarative CLI tools live under [`nix/`](nix/):

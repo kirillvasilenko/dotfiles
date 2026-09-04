@@ -39,7 +39,6 @@ return {
         map("n", "<leader>ht", function()
           review_mode = not review_mode
           gs.toggle_linehl(review_mode)
-          gs.toggle_word_diff(review_mode)
           require("gitsigns.config").config.show_deleted = review_mode
           gs.refresh()
         end, "Toggle review mode")
