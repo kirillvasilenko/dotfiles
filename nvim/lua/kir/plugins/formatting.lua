@@ -14,7 +14,7 @@ return {
         html = { "prettier" },
         json = { "prettier" },
         yaml = { "prettier" },
-        markdown = { "prettier_markdown" },
+        markdown = { "prettier" },
         graphql = { "prettier" },
         liquid = { "prettier" },
         lua = { "stylua" },
@@ -29,20 +29,6 @@ return {
         clang_format = {
           -- Without a .clang-format in the tree, do nothing (no LLVM defaults).
           prepend_args = { "--fallback-style=none" },
-        },
-        -- Separate from JS prettier: wrap prose, leave other prettier defaults alone.
-        prettier_markdown = {
-          command = "prettier",
-          args = {
-            "--stdin-filepath",
-            "$FILENAME",
-            "--parser",
-            "markdown",
-            "--prose-wrap",
-            "always",
-            "--print-width",
-            "120",
-          },
         },
       },
       -- C/C++/Python: don't format on save — Mason tools drift from repo

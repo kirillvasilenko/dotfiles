@@ -35,6 +35,10 @@ The renderer runs Mermaid at the default `securityLevel: strict`:
 - So **no per-word colour or bold inside a sequence diagram**. Do not substitute textual markers
   such as `[ASC]` or `{LastPkAsc}` either — they were tried and rejected as worse than plain text.
 - `<br/>` does work, and is the way to break a long label.
+- **A `;` anywhere in a label ends the statement.** Mermaid takes it as a statement separator, so the
+  rest of the label is parsed as a new statement and the diagram fails to render. This bites in
+  `Note over` text and message labels alike, where a semicolon reads as natural prose. Use a comma, a
+  dash, or `<br/>` instead. Same family as the colon rule under Class diagram below.
 - Colour is only available per node in node-based diagrams, via `classDef` or `style`. Set `color`
   and `stroke` only; never `fill`, which breaks under light/dark theme switching.
 
