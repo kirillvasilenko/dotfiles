@@ -10,6 +10,19 @@
 
 Executable helpers live in [`bin/`](bin/) (e.g. `ydb-add-worktree` / `ydb-remove-worktree`, mirroring `git worktree add|remove`). Home Manager adds that directory via `home.sessionPath` in `nix/home/common.nix`.
 
+`gh-pr-comments` lists the review threads you're part of in a GitHub PR, each with a permalink straight to your own comment. It exists because GitHub unanchors a thread from the diff as soon as a commit touches the commented line: the thread is flagged `Outdated`, drops off the Files changed tab, and the comments panel will not reliably open it. The permalink still works, so the job is getting the list of URLs. It queries GraphQL `reviewThreads` rather than the REST comments endpoint, because REST reports neither `isOutdated` nor `isResolved`.
+
+```bash
+gh-pr-comments https://github.com/owner/repo/pull/1234   # yours, unresolved (the default)
+gh-pr-comments 1234        # from inside the checkout
+gh-pr-comments -r 1234     # yours, resolved and unresolved
+gh-pr-comments -a 1234     # everyone's, unresolved
+gh-pr-comments -ar 1234    # everyone's, everything
+gh-pr-comments -m 1234     # markdown    -i: fzf picker    -u LOGIN: someone else's
+```
+
+Output columns are the thread's resolution state (`OPEN`/`resolved`) and its diff anchoring (`OUTDATED`/`current`) — independent of each other. Unresolved sorts first. Needs `gh auth login`.
+
 **Caveat:** `home.packages` binaries land in `~/.nix-profile/bin`, which Nix already puts on `PATH`. `home.sessionPath` only writes `~/.nix-profile/etc/profile.d/hm-session-vars.sh` — shells must source that file. Because this setup does not let Home Manager manage bash yet, add to `~/.bashrc`:
 
 ```bash
