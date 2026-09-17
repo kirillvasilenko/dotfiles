@@ -22,6 +22,11 @@ return {
         end, "Previous hunk")
 
         map("n", "<leader>hs", gs.stage_hunk, "Stage hunk")
+        map("n", "<leader>hn", function()
+          gs.stage_hunk(nil, nil, function()
+            gs.nav_hunk("next")
+          end)
+        end, "Stage hunk and go to next")
         map("n", "<leader>hu", gs.undo_stage_hunk, "Undo stage hunk")
         map("n", "<leader>hr", gs.reset_hunk, "Reset hunk")
         map("n", "<leader>hS", gs.stage_buffer, "Stage buffer")
