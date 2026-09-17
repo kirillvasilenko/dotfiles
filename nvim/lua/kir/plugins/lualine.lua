@@ -20,12 +20,14 @@ return {
             cond = lazy_status.has_updates,
           },
           {
+            -- green ● ready; orange ● indexing (calls work, may be partial);
+            -- orange ○ parsing (calls rejected)
             function()
               local st = require("kir.lsp.clangd_ready").status()
-              if st == "ready" then
+              if st == "ready" or st == "indexing" then
                 return "● LSP"
               end
-              if st == "not_ready" then
+              if st == "parsing" then
                 return "○ LSP"
               end
               return ""

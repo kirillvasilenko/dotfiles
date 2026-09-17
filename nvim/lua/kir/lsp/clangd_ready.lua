@@ -1,5 +1,13 @@
 -- Single definition of "is clangd ready for this buffer?"
--- Used by type hierarchy, client.request gating, and the statusline.
+-- Used by client.request gating and the statusline.
+--
+-- Two different "not ready" states, treated differently on purpose:
+--   parsing  - clangd has no AST for this file yet (first open, or re-parse
+--              after an edit). Requests would queue and answer late, so we
+--              reject them immediately with a message instead of hanging.
+--   indexing - the file is idle but the background index is still running.
+--              Requests answer right away (index-backed ones may be partial),
+--              so nothing is gated; the statusline just shows it.
 
 local api = vim.api
 
@@ -8,7 +16,7 @@ local M = {}
 local augroup = api.nvim_create_augroup("KirClangdReady", { clear = true })
 
 -- Index: only "in progress" after we have seen a begin for this client.
--- Never-seen begin/end does not block (background index may be off).
+-- Never-seen begin/end counts as ready (background index may be off).
 local index_state = {} ---@type table<integer, { seen_begin: boolean, seen_end: boolean }>
 
 -- Per client so LspRestart cannot reuse the old client's idle.
@@ -155,10 +163,12 @@ local function notify_not_ready(reason)
   vim.notify(reason, vim.log.levels.ERROR)
 end
 
+--- Reason the file has no usable AST yet, or nil. This is the only thing
+--- that gates requests.
 ---@param client vim.lsp.Client
 ---@param bufnr integer
 ---@return string|nil reason
-function M.not_ready(client, bufnr)
+function M.not_parsed(client, bufnr)
   if not client.initialized then
     return "clangd is not initialized yet"
   end
@@ -178,22 +188,24 @@ function M.not_ready(client, bufnr)
     return "clangd is still parsing this file (" .. state .. ")"
   end
 
-  local pending = client.progress.pending and client.progress.pending.backgroundIndexProgress
-  if pending then
-    return "clangd is still indexing"
-  end
-
-  local st = index_state[client.id]
-  if st and st.seen_begin and not st.seen_end then
-    return "clangd is still indexing"
-  end
-
   return nil
 end
 
---- nil = clangd is not for this file; otherwise "ready" or "not_ready".
+---@param client vim.lsp.Client
+---@return boolean
+local function indexing(client)
+  local pending = client.progress.pending and client.progress.pending.backgroundIndexProgress
+  if pending then
+    return true
+  end
+  local st = index_state[client.id]
+  return st ~= nil and st.seen_begin and not st.seen_end
+end
+
+--- nil = clangd is not for this file; otherwise "ready", "parsing" (requests
+--- are rejected) or "indexing" (requests work, index-backed ones may be partial).
 ---@param bufnr? integer
----@return "ready"|"not_ready"|nil
+---@return "ready"|"parsing"|"indexing"|nil
 function M.status(bufnr)
   bufnr = resolve_bufnr(bufnr)
   if not api.nvim_buf_is_valid(bufnr) then
@@ -203,13 +215,16 @@ function M.status(bufnr)
   local client = vim.lsp.get_clients({ bufnr = bufnr, name = "clangd" })[1]
   if not client then
     if clangd_filetypes()[vim.bo[bufnr].filetype] then
-      return "not_ready"
+      return "parsing"
     end
     return nil
   end
 
-  if M.not_ready(client, bufnr) then
-    return "not_ready"
+  if M.not_parsed(client, bufnr) then
+    return "parsing"
+  end
+  if indexing(client) then
+    return "indexing"
   end
   return "ready"
 end
@@ -236,7 +251,7 @@ function M.wrap_client(client)
     end
 
     if gated_methods[method] then
-      local reason = M.not_ready(client, resolve_bufnr(bufnr))
+      local reason = M.not_parsed(client, resolve_bufnr(bufnr))
       if reason then
         -- Do not invoke the handler: default hover/definition would notify again.
         notify_not_ready(reason)
