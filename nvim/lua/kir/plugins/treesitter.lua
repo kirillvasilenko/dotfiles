@@ -30,6 +30,8 @@ return {
       "sql",
     })
 
+    vim.treesitter.language.register("mermaid", "mermaid_next") -- injections normalize "-" to "_"
+
     -- highlight / indent are not modules on main; enable them per buffer
     vim.api.nvim_create_autocmd("FileType", {
       callback = function(args)
