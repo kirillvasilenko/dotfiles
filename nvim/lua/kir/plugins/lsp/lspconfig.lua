@@ -125,7 +125,7 @@ return {
         -- Misc
         ----------------------------------------------------------------------
         opts.desc = "Restart LSP"
-        keymap.set("n", "<leader>rs", vim.cmd.LspRestart, opts)
+        keymap.set("n", "<leader>rs", "<cmd>lsp restart<CR>", opts)
 
         opts.desc = "Toggle inlay hints"
         keymap.set("n", "grl", toggle_inlay_hints, opts)
