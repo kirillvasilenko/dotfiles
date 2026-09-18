@@ -41,11 +41,12 @@ source ~/.nix-profile/etc/profile.d/hm-session-vars.sh
 ## Agent skills (`skills/`)
 
 Skills shared by every coding agent live in [`skills/`](skills/), one directory per skill with a
-`SKILL.md`. Cursor and Claude Code discover them through symlinks:
+`SKILL.md`. Cursor and Claude Code discover them through symlinks. Claude Code also writes its own synced skills into `~/.claude/skills`, so that one must be a real directory with one symlink per skill, never a link to the whole `skills/` directory (otherwise the synced bundle lands in this repo):
 
 ```bash
 ln -s ~/dotfiles/skills ~/.cursor/skills
-ln -s ~/dotfiles/skills ~/.claude/skills
+mkdir -p ~/.claude/skills
+for s in ~/dotfiles/skills/*/; do ln -s "$s" ~/.claude/skills/; done
 ```
 
 Codex has no skill loader; `~/.codex/AGENTS.md` points it at the directory instead.
