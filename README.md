@@ -6,6 +6,14 @@
 ./install-nvim.sh
 ```
 
+## Tmux
+
+```bash
+./install-tmux.sh
+```
+
+Symlinks `~/.tmux.conf` to [`tmux/.tmux.conf`](tmux/.tmux.conf), clones [TPM](https://github.com/tmux-plugins/tpm) into `~/.tmux/plugins/tpm` (or updates it), and installs the `@plugin` entries so `<prefix>I` is not needed on a fresh machine. Re-run it after adding a plugin to the config, or press `<prefix>I` inside tmux.
+
 ## Personal scripts (`bin/`)
 
 Executable helpers live in [`bin/`](bin/) (e.g. `ydb-add-worktree` / `ydb-remove-worktree`, mirroring `git worktree add|remove`). Home Manager adds that directory via `home.sessionPath` in `nix/home/common.nix`.
