@@ -49,7 +49,7 @@ return {
     },
     -- Pastes "@path :L1:C1-L2:C2" (no code) into Claude's prompt; starts Claude if needed.
     {
-      "<leader>at",
+      "<leader>as",
       function()
         require("sidekick.cli").send({ msg = "{this}" })
       end,
