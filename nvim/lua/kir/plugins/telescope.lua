@@ -222,5 +222,58 @@ return {
 
     keymap.set("n", "<leader>ft", vim.cmd.TodoTelescope, { desc = "Find todos" })
 
+    -- Next `link` at/after the cursor: current line first, then the following lines.
+    -- A span whose closing backtick is under the cursor is skipped, so that after
+    -- <leader>fl parks the cursor there, the next call moves on to the next link.
+    -- Returns text, line (1-based), col of the closing backtick (1-based).
+    local function next_backtick_span()
+      local cur_lnum = vim.fn.line(".")
+      local cur_col = vim.fn.col(".")
+      for lnum = cur_lnum, vim.fn.line("$") do
+        local line = vim.fn.getline(lnum)
+        local init = 1
+        while true do
+          local s, e, text = line:find("`([^`]+)`", init)
+          if not s then
+            break
+          end
+          if lnum ~= cur_lnum or e > cur_col then
+            return text, lnum, e
+          end
+          init = e + 1
+        end
+      end
+      return nil
+    end
+
+    -- Jump to where code should open: another file window in this tab if there is
+    -- one (skipping nvim-tree, Trouble, terminals, ... via buftype), else the other
+    -- tab. With one window and one tab this is a no-op.
+    local function goto_other_place()
+      local cur = vim.api.nvim_get_current_win()
+      for _, win in ipairs(vim.api.nvim_tabpage_list_wins(0)) do
+        if win ~= cur and vim.bo[vim.api.nvim_win_get_buf(win)].buftype == "" then
+          vim.api.nvim_set_current_win(win)
+          return
+        end
+      end
+      vim.cmd("tabnext")
+    end
+
+    -- Review workflow: the plan (with `path:line` links) lives in one pane or tab,
+    -- the code in the other. Yank the next link, go to the other place, and find it.
+    -- find_files parses `path:line` itself and jumps to the line on <CR>.
+    keymap.set("n", "<leader>fl", function()
+      local link, lnum, col = next_backtick_span()
+      if not link then
+        vim.notify("No `link` found after the cursor", vim.log.levels.WARN)
+        return
+      end
+      vim.fn.setreg('"', link)
+      vim.api.nvim_win_set_cursor(0, { lnum, col - 1 })
+      goto_other_place()
+      builtin.find_files({ default_text = link })
+    end, { desc = "Find next `link` in the other pane/tab" })
+
   end,
 }
