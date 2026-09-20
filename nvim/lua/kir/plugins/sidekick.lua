@@ -23,16 +23,26 @@ return {
     { "<leader>a", nil, desc = "AI/Claude" },
     -- Starts Claude in the tmux split (or attaches to a running one) and moves
     -- the tmux focus there. Sidekick's own `focus` only covers panes it shows
-    -- inside Neovim; a tmux split is created unfocused. Hide/close it with tmux.
+    -- inside Neovim; for a tmux pane "attach" only records the send target, so
+    -- a Claude picked from another session/window is pulled into this window
+    -- (join-pane) below Neovim. Hide/close it with tmux.
     {
       "<leader>ac",
       function()
         require("sidekick.cli.state").with(function(state)
           local pane = state.session and state.session.tmux_pane_id
-          if pane then
-            vim.fn.system({ "tmux", "select-window", "-t", pane })
-            vim.fn.system({ "tmux", "select-pane", "-t", pane })
+          if not pane then
+            return
           end
+          local function tmux(...)
+            return vim.trim(vim.fn.system({ "tmux", ... }))
+          end
+          local here = tmux("display", "-p", "#{window_id}")
+          local there = tmux("display", "-p", "-t", pane, "#{window_id}")
+          if there ~= here then
+            tmux("join-pane", "-v", "-l", "50%", "-s", pane, "-t", vim.env.TMUX_PANE)
+          end
+          tmux("select-pane", "-t", pane)
         end, { filter = { name = "claude" }, attach = true, show = true })
       end,
       desc = "Open Claude pane",
