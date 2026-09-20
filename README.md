@@ -14,6 +14,14 @@
 
 Symlinks `~/.tmux.conf` to [`tmux/.tmux.conf`](tmux/.tmux.conf), clones [TPM](https://github.com/tmux-plugins/tpm) into `~/.tmux/plugins/tpm` (or updates it), and installs the `@plugin` entries so `<prefix>I` is not needed on a fresh machine. Re-run it after adding a plugin to the config, or press `<prefix>I` inside tmux.
 
+## npm
+
+```bash
+./install-npm.sh
+```
+
+Symlinks `~/.npmrc` to [`npm/.npmrc`](npm/.npmrc), which sets npm's global prefix to `~/.local`. With node from Nix (Home Manager) the default prefix is the read-only `/nix/store`, so every `npm install -g` fails with `EACCES`; with system node it would need root. After this, global packages land in `~/.local/lib/node_modules` with their binaries in `~/.local/bin`, which must be on `PATH`.
+
 ## Personal scripts (`bin/`)
 
 Executable helpers live in [`bin/`](bin/) (e.g. `ydb-add-worktree` / `ydb-remove-worktree`, mirroring `git worktree add|remove`). Home Manager adds that directory via `home.sessionPath` in `nix/home/common.nix`.
