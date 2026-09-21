@@ -76,11 +76,82 @@ parse error. Use a dash.
 ## Sequence diagram
 
 Participants are the objects that carry the thing, not every class on the call path. Collapse hops
-that contribute nothing to the subject, and say in the reply which ones you collapsed.
+that contribute nothing to the subject, and say in the reply which ones you collapsed. A value
+type (`TExecutionResult`) is not a participant: fold it into the message label or a note. A member
+that is only read on the way still earns a lifeline when it is what the reader must understand
+(the cursor's `Script` is such a member when the subject is how a script is executed); the test is
+whether the diagram is about it, not whether it is mutated.
+
+### Participant labels
+
+The codebase repeats class names across namespaces and hides everything behind interfaces, so a
+bare type name identifies a participant only when it is unambiguous in context (`TStepAction`,
+`TExecutionResult`). Otherwise the label says which object it is, one line each, joined with
+`<br/>`:
+
+```
+participant collection as TScanHead.SourcesCollection<br/>: sptr<ISourcesCollection><br/>= TOrderedResultWithLimitCollection
+```
+
+- line one: the class that declares the member, `.`, the member name. `.` and not `::`, because
+  it is a member of an object, and `::` here means a namespace or a nested type;
+- line two, starting with `: `: the declared type;
+- line three, starting with `= `: the actual runtime type.
+
+The leading `:` and `=` are what make the extra lines readable at a glance; keep them even when
+only one extra line is present. Drop a line that adds nothing: the `=` line when the runtime type
+is the same, unknown or irrelevant; the `:` line when the name already says the type.
+
+When the owner on line one is itself ambiguous, fix the owner, not the member:
+
+- for the trivial / simple / plain mirrors the namespace is the difference:
+  `NTrivial::TScanHead.SourcesCollection`;
+- for an interface with several implementations use the actual type of the owner:
+  `TPortionDataSource.ExecutionContext`, not `IDataSource.ExecutionContext`;
+- when nothing names the object, reach it through a participant already on the diagram:
+  `TStepAction.SourceLease.ExecutionContext`.
+
+A local or a parameter is owned by its function, and there `::` is right because a function is a
+scope: `TScanHead::Start().context<br/>: TScanContext`.
+
+Angle brackets in these labels render correctly; `sptr<ISourcesConstructor>` is fine here even
+though class diagrams need `~ ~`.
 
 Use `loop` and `opt` for real control flow — a per-item loop and a resume path are part of the
 mechanism, not decoration. Use `Note over` for facts that are not messages, and to mark phase
 boundaries ("initialization ends here, nothing about order changes after this").
+
+### Indentation
+
+Indent the source like code, two spaces per level, so the diagram can be read and edited as text.
+Mermaid ignores the indentation; the reader does not. A blank line separates the participant
+list from the messages, and phases from each other.
+
+- every block that has an `end` (`loop`, `opt`, `alt` / `else`, `break`, `par`, `critical`)
+  indents its body one level;
+- `activate X` indents everything up to the matching `deactivate X` one level, so the extent of
+  the activation is visible in the source;
+- the `else` of an `alt` sits at the level of its `alt`.
+
+```
+  worker ->> step_action: DoExecuteImpl()
+  activate step_action
+    step_action ->> cursor: Execute(IDataSource&)
+    loop !Script.IsFinished(CurrentStepIdx)
+      cursor ->> step: ExecuteInplace(IDataSource&, TFetchingScriptCursor&)
+      step -->> cursor: result: TExecutionResult
+      break result.IsPending()
+        cursor -->> step_action: result
+      end
+    end
+    alt result.IsPending()
+      step_action ->> async_job: Start(uptr<TDataSourceLease>)
+      step_action -->> worker: false
+    else
+      step_action -->> worker: true
+    end
+  deactivate step_action
+```
 
 End with the consequence. The last note should be what the reader is meant to leave with, usually
 the failure that follows when two parts disagree.
