@@ -70,6 +70,16 @@ Codex loads them from `~/.codex/skills`, which gets the same per-skill symlinks:
 for s in ~/dotfiles/skills/*/; do ln -s "$s" ~/.codex/skills/; done
 ```
 
+## Agent MCP servers
+
+MCP servers are not kept in this repo. They are registered per machine with `claude mcp add` and `codex mcp add`, and the work servers depend on the internal `ya`, so the server list and the install scripts (one per agent) live in arcadia under `junk/kir-vasilenko/`. Run those scripts on a new machine; each script explains its own quirks. Which server an agent should use for what is in [`agents/AGENTS.md`](agents/AGENTS.md).
+
+The scripts also run this, because the bridge creates its token world-readable; do it by hand if you connected a server before running them:
+
+```bash
+chmod 700 ~/.mcp
+```
+
 ## CLI tools
 
 The same tool set (neovim, tmux, ripgrep, fd, tree-sitter CLI, node, go, python) is installed per user, without root, by the native package manager of each platform. Both files are plain lists you edit by hand.
