@@ -6,12 +6,23 @@ return {
     local review_mode = false
     local review_base_main = false
 
+    local function center()
+      vim.cmd("normal! zz")
+    end
+
+    -- Called by 'operatorfunc' from <leader>hn (and from "." repeating it).
+    function _G.__gitsigns_stage_and_next()
+      gs.stage_hunk(nil, nil, function()
+        gs.nav_hunk("next", nil, center)
+      end)
+    end
+
     gs.setup({
       attach_to_untracked = true,
       signs_staged_enable = false,
       on_attach = function(bufnr)
-        local function map(mode, l, r, desc)
-          vim.keymap.set(mode, l, r, { buffer = bufnr, desc = desc })
+        local function map(mode, l, r, desc, extra)
+          vim.keymap.set(mode, l, r, vim.tbl_extend("force", { buffer = bufnr, desc = desc }, extra or {}))
         end
 
         map("n", "]h", function()
@@ -21,12 +32,14 @@ return {
           gs.nav_hunk("prev")
         end, "Previous hunk")
 
-        map("n", "<leader>hs", gs.stage_hunk, "Stage hunk")
+        map("n", "<leader>hs", function()
+          gs.stage_hunk(nil, nil, center)
+        end, "Stage hunk")
+        -- Runs through g@ (operatorfunc) so that "." repeats it.
         map("n", "<leader>hn", function()
-          gs.stage_hunk(nil, nil, function()
-            gs.nav_hunk("next")
-          end)
-        end, "Stage hunk and go to next")
+          vim.o.operatorfunc = "v:lua.__gitsigns_stage_and_next"
+          return "g@l"
+        end, "Stage hunk and go to next", { expr = true })
         map("n", "<leader>hu", gs.undo_stage_hunk, "Undo stage hunk")
         map("n", "<leader>hr", gs.reset_hunk, "Reset hunk")
         map("n", "<leader>hS", gs.stage_buffer, "Stage buffer")
