@@ -39,10 +39,24 @@ gh-pr-comments -m 1234     # markdown    -i: fzf picker    -u LOGIN: someone els
 
 Output columns are the thread's resolution state (`OPEN`/`resolved`) and its diff anchoring (`OUTDATED`/`current`) — independent of each other. Unresolved sorts first. Needs `gh auth login`.
 
+## Agent rules (`agents/`)
+
+[`agents/AGENTS.md`](agents/AGENTS.md) holds the rules every coding agent must follow in every
+repository (never commit, never stage without being asked, no source edits during builds, and so
+on). Each tool reads it through a symlink to its own global instruction file:
+
+```bash
+ln -s ~/dotfiles/agents/AGENTS.md ~/.claude/CLAUDE.md   # Claude Code
+ln -s ~/dotfiles/agents/AGENTS.md ~/.codex/AGENTS.md    # Codex
+ln -s ~/dotfiles/agents/AGENTS.md ~/.gemini/GEMINI.md   # Gemini CLI
+```
+
+Cursor has no global rules file; paste the same text into Settings > Rules > User Rules.
+
 ## Agent skills (`skills/`)
 
 Skills shared by every coding agent live in [`skills/`](skills/), one directory per skill with a
-`SKILL.md`. Cursor and Claude Code discover them through symlinks. Claude Code also writes its own synced skills into `~/.claude/skills`, so that one must be a real directory with one symlink per skill, never a link to the whole `skills/` directory (otherwise the synced bundle lands in this repo):
+`SKILL.md`. Cursor, Claude Code and Codex discover them through symlinks. Claude Code also writes its own synced skills into `~/.claude/skills`, so that one must be a real directory with one symlink per skill, never a link to the whole `skills/` directory (otherwise the synced bundle lands in this repo):
 
 ```bash
 ln -s ~/dotfiles/skills ~/.cursor/skills
@@ -50,7 +64,11 @@ mkdir -p ~/.claude/skills
 for s in ~/dotfiles/skills/*/; do ln -s "$s" ~/.claude/skills/; done
 ```
 
-Codex has no skill loader; `~/.codex/AGENTS.md` points it at the directory instead.
+Codex loads them from `~/.codex/skills`, which gets the same per-skill symlinks:
+
+```bash
+for s in ~/dotfiles/skills/*/; do ln -s "$s" ~/.codex/skills/; done
+```
 
 ## CLI tools
 
