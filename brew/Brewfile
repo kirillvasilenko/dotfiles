@@ -1,0 +1,10 @@
+# Per-user CLI tools on macOS. Install/update with ./install-brew.sh
+# (`brew bundle --file=brew/Brewfile`). Same tool set as pixi/pixi-global.toml.
+brew "neovim"
+brew "tmux"
+brew "ripgrep"
+brew "fd"
+brew "tree-sitter"   # CLI required by nvim-treesitter (main) to build parsers
+brew "node"          # mason / some LSPs and formatters install or run via npm
+brew "go"            # mason builds some LSPs (e.g. sqls) with `go`
+brew "python@3.14"   # plugins/tools that call python3 (`python` alone is a moving alias)

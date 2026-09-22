@@ -20,11 +20,11 @@ Symlinks `~/.tmux.conf` to [`tmux/.tmux.conf`](tmux/.tmux.conf), clones [TPM](ht
 ./install-npm.sh
 ```
 
-Symlinks `~/.npmrc` to [`npm/.npmrc`](npm/.npmrc), which sets npm's global prefix to `~/.local`. With node from Nix (Home Manager) the default prefix is the read-only `/nix/store`, so every `npm install -g` fails with `EACCES`; with system node it would need root. After this, global packages land in `~/.local/lib/node_modules` with their binaries in `~/.local/bin`, which must be on `PATH`.
+Symlinks `~/.npmrc` to [`npm/.npmrc`](npm/.npmrc), which sets npm's global prefix to `~/.local`, so `npm install -g` (and self-updaters such as `codex update`) never need root and never depend on where `node` itself lives (a system `/usr/local` owned by root, a read-only store, a pixi env). Global packages land in `~/.local/lib/node_modules` with their binaries in `~/.local/bin`, which must be on `PATH`.
 
 ## Personal scripts (`bin/`)
 
-Executable helpers live in [`bin/`](bin/) (e.g. `ydb-add-worktree` / `ydb-remove-worktree`, mirroring `git worktree add|remove`). Home Manager adds that directory via `home.sessionPath` in `nix/home/common.nix`.
+Executable helpers live in [`bin/`](bin/) (e.g. `ydb-add-worktree` / `ydb-remove-worktree`, mirroring `git worktree add|remove`). Put the directory on `PATH` (see [CLI tools](#cli-tools)).
 
 `gh-pr-comments` lists the review threads you're part of in a GitHub PR, each with a permalink straight to your own comment. It exists because GitHub unanchors a thread from the diff as soon as a commit touches the commented line: the thread is flagged `Outdated`, drops off the Files changed tab, and the comments panel will not reliably open it. The permalink still works, so the job is getting the list of URLs. It queries GraphQL `reviewThreads` rather than the REST comments endpoint, because REST reports neither `isOutdated` nor `isResolved`.
 
@@ -39,21 +39,6 @@ gh-pr-comments -m 1234     # markdown    -i: fzf picker    -u LOGIN: someone els
 
 Output columns are the thread's resolution state (`OPEN`/`resolved`) and its diff anchoring (`OUTDATED`/`current`) — independent of each other. Unresolved sorts first. Needs `gh auth login`.
 
-**Caveat:** `home.packages` binaries land in `~/.nix-profile/bin`, which Nix already puts on `PATH`. `home.sessionPath` only writes `~/.nix-profile/etc/profile.d/hm-session-vars.sh` — shells must source that file. Because this setup does not let Home Manager manage bash yet, add to `~/.bashrc`:
-
-```bash
-# Home Manager session variables (PATH for ~/dotfiles/bin, etc.)
-if [ -f "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh" ]; then
-  . "$HOME/.nix-profile/etc/profile.d/hm-session-vars.sh"
-fi
-```
-
-Current shell (after `home-manager switch`):
-
-```bash
-source ~/.nix-profile/etc/profile.d/hm-session-vars.sh
-```
-
 ## Agent skills (`skills/`)
 
 Skills shared by every coding agent live in [`skills/`](skills/), one directory per skill with a
@@ -67,29 +52,34 @@ for s in ~/dotfiles/skills/*/; do ln -s "$s" ~/.claude/skills/; done
 
 Codex has no skill loader; `~/.codex/AGENTS.md` points it at the directory instead.
 
-## Nix / Home Manager
+## CLI tools
 
-Declarative CLI tools live under [`nix/`](nix/):
+The same tool set (neovim, tmux, ripgrep, fd, tree-sitter CLI, node, go, python) is installed per user, without root, by the native package manager of each platform. Both files are plain lists you edit by hand.
 
-| Flake output | Machine |
-|---|---|
-| `kir@macbook` | personal macOS |
-| `kir@remote` | shared Ubuntu server |
-
-Shared packages: `nix/home/common.nix`  
-Host-only packages: `nix/home/hosts/{macbook,remote}.nix`
+### macOS: Homebrew
 
 ```bash
-# first time (from the nix/ directory): nix flake lock
-
-# apply on this remote (use nix run if `home-manager` isn't on PATH yet)
-nix run home-manager -- switch --flake ~/dotfiles/nix#kir@remote
-
-# apply on the Mac
-nix run home-manager -- switch --flake ~/dotfiles/nix#kir@macbook
+./install-brew.sh
 ```
 
-Adding/removing packages in `*.nix` does **not** need `flake lock` again — just re-run `switch`.  
-Use `nix flake update` (in `nix/`) only when you want newer package versions from nixpkgs.
+Runs `brew bundle` on [`brew/Brewfile`](brew/Brewfile). Edit the file and re-run to add or remove tools.
 
-Adjust `home.username` / `home.homeDirectory` in the host files if needed.
+### Linux: pixi (conda-forge)
+
+```bash
+./install-pixi.sh
+```
+
+Installs [pixi](https://pixi.sh) (one static binary in `~/.pixi/bin`) if missing, symlinks `~/.pixi/manifests/pixi-global.toml` to [`pixi/pixi-global.toml`](pixi/pixi-global.toml), and runs `pixi global sync`. Everything lives under `~/.pixi`; conda-forge packages bring their own libraries, so no system packages are needed. No environment activation: each exposed command is a launcher in `~/.pixi/bin`.
+
+To change tools, edit the manifest and run `pixi global sync`. Do **not** use `pixi global install`: it rewrites the manifest in its own layout.
+
+### PATH
+
+Nothing edits your shell rc. Add once to `~/.bashrc` (or `~/.zshrc`), first so these win over `/usr/local` and system copies:
+
+```bash
+export PATH="$HOME/.pixi/bin:$HOME/.local/bin:$HOME/dotfiles/bin:$PATH"
+```
+
+On macOS Homebrew's own `brew shellenv` line replaces the `~/.pixi/bin` part.

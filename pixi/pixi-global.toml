@@ -1,0 +1,37 @@
+# Per-user CLI tools on Linux, installed by pixi from conda-forge into ~/.pixi
+# (nothing outside $HOME, no root). Symlinked to ~/.pixi/manifests/pixi-global.toml
+# by ./install-pixi.sh.
+#
+# Edit this file, then run `pixi global sync`. Never use `pixi global install`:
+# it rewrites this file in its own layout.
+#
+# One env for everything; `exposed` lists the commands that land in ~/.pixi/bin.
+# Package name traps: the editor is `nvim` (`neovim` is the Python client),
+# fd is `fd-find`.
+version = 1
+
+[envs.tools]
+channels = ["conda-forge"]
+
+[envs.tools.dependencies]
+nvim = "*"
+tmux = "*"
+ripgrep = "*"
+fd-find = "*"
+tree-sitter-cli = "*"
+nodejs = "*"
+go = "*"
+python = "3.14.*"
+
+[envs.tools.exposed]
+nvim = "nvim"
+tmux = "tmux"
+rg = "rg"
+fd = "fd"
+tree-sitter = "tree-sitter"
+node = "node"
+npm = "npm"
+npx = "npx"
+go = "go"
+gofmt = "gofmt"
+python3 = "python3"
