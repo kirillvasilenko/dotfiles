@@ -19,6 +19,19 @@ These rules apply in every repository and every session, on top of the repositor
 2. In a review session (I read someone else's change), do not build or run tests unless I
    ask; deliver findings from reading.
 3. Write logs and temporary files under `~/tmp`, never under `/tmp`.
+4. Make a test as small and simple as possible, on the simplest harness that reaches the
+   behaviour under test: a unit test with stubs before an actor-system test, an actor-system
+   test before a whole tablet, a tablet before a whole KQP cluster. One test checks one thing;
+   it does not also prove the consequences that another test already covers.
+
+## Clusters
+
+1. Acceptance, perf and QA clusters (for example `olap-testing-*`, "vla-big") belong to other
+   people. Never execute anything there: no queries, no DDL, no ad hoc SDK probes, even
+   read-only on an idle cluster; it can disturb their runs. Reading their logs, metrics,
+   configs and viewer pages is fine.
+2. Experiments, reproductions and big tests (jepsen and the like) run only on my own slice
+   (`~/slice`) or locally.
 
 ## Working with me
 
@@ -27,6 +40,9 @@ These rules apply in every repository and every session, on top of the repositor
 2. When you point at code, write a path that a fuzzy file finder resolves from the repository
    root, followed by `:line`, and make sure the line is the statement you mean.
 3. Do not spend effort on formatting; clang-format runs on commit.
+4. Do not write comments that say what the code does or tell the story behind it; such
+   comments irritate reviewers. Make the names and the structure say it, and fix the name when
+   it does not. A comment is only for a decision the code cannot express, and it is one line.
 
 ## Internal services
 
