@@ -43,6 +43,9 @@ These rules apply in every repository and every session, on top of the repositor
 4. Do not write comments that say what the code does or tell the story behind it; such
    comments irritate reviewers. Make the names and the structure say it, and fix the name when
    it does not. A comment is only for a decision the code cannot express, and it is one line.
+5. `~/dotfiles` is a public repository. Never put anything sensitive or semi-sensitive there:
+   no tokens or credentials, no internal resource ids, issue keys, host names, dashboard links
+   or other internal URLs beyond the bare service domains. Use placeholders instead.
 
 ## Internal services
 
@@ -55,10 +58,10 @@ Internal pages are reachable only through MCP servers; web search or fetch canno
 - Sandbox resources (CI logs, Allure reports, attachments in tracker issues), usually `proxy.sandbox.yandex-team.ru/<id>/...` but also `sandbox.yandex-team.ru/resource/<id>/...` and other hosts: no MCP, download with `ya` from the shell. A link being there does not mean it has to be downloaded: fetch a resource only when the answer needs what is inside it. If the stack trace in the issue already explains the failure, the logs stay where they are. The long number in the URL is the Sandbox resource id; the rest of the URL is a path inside that resource. Put it under `~/tmp/<current branch>/<what it is>/`, so that everything belonging to a finished branch can be deleted together and the name says what the data is (issue key and kind, not the resource id). `--output` must name a directory that does not exist yet. Run it from an arcadia directory (the `ya` on `PATH` resolves tools through the checkout it is run in):
 
   ```bash
-  # working on branch fix-cs-verify, logs of the nemesis run from YDBBUGS-523
-  cd ~/dev/arcadia && ya download sbr:13441222991 --output ~/tmp/fix-cs-verify/YDBBUGS-523-nemesis-logs
-  # https://proxy.sandbox.yandex-team.ru/13441222991/data/attachments/58480e6f3fe83946.gz
-  # is now ~/tmp/fix-cs-verify/YDBBUGS-523-nemesis-logs/data/attachments/58480e6f3fe83946.gz
+  # working on branch fix-cs-verify, logs of the nemesis run from issue <ISSUE-KEY>
+  cd ~/dev/arcadia && ya download sbr:<resource-id> --output ~/tmp/fix-cs-verify/<ISSUE-KEY>-nemesis-logs
+  # https://proxy.sandbox.yandex-team.ru/<resource-id>/data/attachments/<file>.gz
+  # is now ~/tmp/fix-cs-verify/<ISSUE-KEY>-nemesis-logs/data/attachments/<file>.gz
   ```
 
   Resources can be large (a whole Allure report is gigabytes), and a `.gz` attachment there is usually a tar archive with one directory per host.
