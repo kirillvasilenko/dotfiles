@@ -8,3 +8,5 @@ brew "tree-sitter"   # CLI required by nvim-treesitter (main) to build parsers
 brew "node"          # mason / some LSPs and formatters install or run via npm
 brew "go"            # mason builds some LSPs (e.g. sqls) with `go`
 brew "python@3.14"   # plugins/tools that call python3 (`python` alone is a moving alias)
+brew "gnuplot"       # jepsen: latency/rate plots
+brew "graphviz"      # jepsen: anomaly cycle graphs (dot)

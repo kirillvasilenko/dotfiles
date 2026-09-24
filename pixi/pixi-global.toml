@@ -22,6 +22,8 @@ tree-sitter-cli = "*"
 nodejs = "*"
 go = "*"
 python = "3.14.*"
+gnuplot = "*"     # jepsen: latency/rate plots
+graphviz = "*"    # jepsen: anomaly cycle graphs (dot)
 
 [envs.tools.exposed]
 nvim = "nvim"
@@ -35,3 +37,5 @@ npx = "npx"
 go = "go"
 gofmt = "gofmt"
 python3 = "python3"
+gnuplot = "gnuplot"
+dot = "dot"
