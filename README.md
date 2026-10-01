@@ -24,7 +24,7 @@ Symlinks `~/.npmrc` to [`npm/.npmrc`](npm/.npmrc), which sets npm's global prefi
 
 ## Personal scripts (`bin/`)
 
-Executable helpers live in [`bin/`](bin/) (e.g. `ydb-add-worktree` / `ydb-remove-worktree`, mirroring `git worktree add|remove`). Put the directory on `PATH` (see [CLI tools](#cli-tools)).
+Executable helpers live in [`bin/`](bin/) (e.g. `ydb-add-worktree` / `ydb-remove-worktree`, mirroring `git worktree add|remove`). The worktree folder is `../ydb-<branch>` by default; `-p pr` makes it `../pr-<branch>` for reviewing someone else's PR, and `ydb-remove-worktree` finds the folder by branch whatever its prefix. Put the directory on `PATH` (see [CLI tools](#cli-tools)).
 
 `gh-pr-comments` lists the review threads you're part of in a GitHub PR, each with a permalink straight to your own comment. It exists because GitHub unanchors a thread from the diff as soon as a commit touches the commented line: the thread is flagged `Outdated`, drops off the Files changed tab, and the comments panel will not reliably open it. The permalink still works, so the job is getting the list of URLs. It queries GraphQL `reviewThreads` rather than the REST comments endpoint, because REST reports neither `isOutdated` nor `isResolved`.
 
@@ -72,7 +72,7 @@ for s in ~/dotfiles/skills/*/; do ln -s "$s" ~/.codex/skills/; done
 
 ## Agent MCP servers
 
-MCP servers are not kept in this repo. They are registered per machine with `claude mcp add` and `codex mcp add`, and the work servers depend on the internal `ya`, so the server list and the install scripts (one per agent) live in arcadia under `junk/kir-vasilenko/`. Run those scripts on a new machine; each script explains its own quirks. Which server an agent should use for what is in [`agents/AGENTS.md`](agents/AGENTS.md).
+MCP servers are not kept in this repo. They are registered per machine with `claude mcp add` and `codex mcp add`, and the work servers depend on the internal `ya`, so the server list and the install scripts (one per agent) live in my arcadia junk directory. On a new machine first link your junk directory, wherever it is, as `~/junk` (for example `ln -s ~/dev/arcadia/junk/<login> ~/junk`), then run those scripts; each script explains its own quirks. Which server an agent should use for what is in [`agents/AGENTS.md`](agents/AGENTS.md).
 
 The scripts also run this, because the bridge creates its token world-readable; do it by hand if you connected a server before running them:
 
