@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
-# Add a YDB git worktree + Cursor/ya IDE setup for a new branch.
+# Add a YDB git worktree + Cursor/ya IDE setup for a branch.
+# A new branch is created from a freshly pulled main; an existing branch
+# (for example a colleague's PR branch fetched for review) is used as is.
 #
 # Usage (from the main ydb repo, not a worktree):
-#   ydb-add-worktree <feature_name> [folders_for_ya_ide...]
+#   ydb-add-worktree [-p prefix] <feature_name> [folders_for_ya_ide...]
 #
 # Defaults for IDE folders:
 #   ./ydb/core/tx ./ydb/core/kqp/ut/olap
@@ -11,18 +13,31 @@ set -euo pipefail
 
 usage() {
   cat <<'EOF' >&2
-Usage: ydb-add-worktree <feature_name> [folders_for_ya_ide...]
+Usage: ydb-add-worktree [-p prefix] <feature_name> [folders_for_ya_ide...]
 
 Must be run from the main ydb repository (not a worktree).
 
+The branch is created from main when it does not exist yet, and used as is otherwise.
+The worktree goes to ../<prefix>-<feature_name> (prefix defaults to "ydb").
+
 Examples:
   ydb-add-worktree my-feature
+  ydb-add-worktree -p pr colleague/their-fix
   ydb-add-worktree my-feature ./ydb/core/tx ./ydb/core/kqp/ut/olap
 EOF
   exit 1
 }
 
-if [[ $# -lt 1 ]]; then
+prefix=ydb
+while getopts ":p:h" opt; do
+  case "$opt" in
+    p) prefix=$OPTARG ;;
+    *) usage ;;
+  esac
+done
+shift $((OPTIND - 1))
+
+if [[ $# -lt 1 || -z "$prefix" ]]; then
   usage
 fi
 
@@ -35,9 +50,11 @@ else
   folders=(./ydb/core/tx ./ydb/core/kqp/ut/olap)
 fi
 
-worktree_path="../ydb-${feature_name}"
-ide_project_dir="${HOME}/ide/ydb-${feature_name}"
-workspace_name="ydb-${feature_name}"
+slug=${feature_name//\//-}
+worktree_name="${prefix}-${slug}"
+worktree_path="../${worktree_name}"
+ide_project_dir="${HOME}/ide/${worktree_name}"
+workspace_name="${worktree_name}"
 
 clangd_src="${HOME}/dotfiles/ydb/.clangd"
 if [[ ! -f "$clangd_src" ]]; then
@@ -62,24 +79,27 @@ if [[ -e "$worktree_path" ]]; then
   exit 1
 fi
 
-if git show-ref --verify --quiet "refs/heads/${feature_name}"; then
-  echo "error: branch already exists: ${feature_name}" >&2
-  exit 1
-fi
-
 current_branch=$(git branch --show-current)
-if [[ "$current_branch" == "main" ]]; then
-  echo "→ on main; pulling from official..."
-  git pull --ff-only official main
+if git show-ref --verify --quiet "refs/heads/${feature_name}"; then
+  if [[ "$current_branch" == "$feature_name" ]]; then
+    echo "→ ${feature_name} is checked out here; switching to main..."
+    git switch main
+  fi
+  echo "→ creating worktree ${worktree_path} for existing branch ${feature_name}..."
+  git worktree add "$worktree_path" "$feature_name"
 else
-  echo "→ fetching official main into local main..."
-  git fetch official main:main
-  echo "→ switching to main..."
-  git switch main
+  if [[ "$current_branch" == "main" ]]; then
+    echo "→ on main; pulling from official..."
+    git pull --ff-only official main
+  else
+    echo "→ fetching official main into local main..."
+    git fetch official main:main
+    echo "→ switching to main..."
+    git switch main
+  fi
+  echo "→ creating worktree ${worktree_path} (new branch ${feature_name} from main)..."
+  git worktree add -b "$feature_name" "$worktree_path"
 fi
-
-echo "→ creating worktree ${worktree_path} (branch ${feature_name})..."
-git worktree add -b "$feature_name" "$worktree_path"
 
 echo "→ initializing ya IDE project in ${worktree_path}..."
 (

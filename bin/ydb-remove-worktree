@@ -2,26 +2,40 @@
 # Remove a YDB git worktree + Cursor/ya IDE setup created by ydb-add-worktree.
 #
 # Usage (from the main ydb repo, not a worktree):
-#   ydb-remove-worktree <feature_name>
+#   ydb-remove-worktree [-p prefix] <feature_name>
 
 set -euo pipefail
 
 usage() {
   cat <<'EOF' >&2
-Usage: ydb-remove-worktree <feature_name>
+Usage: ydb-remove-worktree [-p prefix] <feature_name>
 
 Must be run from the main ydb repository (not a worktree).
 
 Removes:
-  - git worktree ../ydb-<feature_name> (fails if dirty)
+  - the git worktree of branch <feature_name> (fails if dirty)
   - local branch <feature_name> (fails if unmerged)
-  - IDE project ~/ide/ydb-<feature_name>
+  - IDE project ~/ide/<worktree folder name>
 
-Example:
+The worktree folder is found by branch, so any prefix works without -p.
+-p names ../<prefix>-<feature_name> explicitly, e.g. when the folder was
+already deleted by hand and only the IDE project is left.
+
+Examples:
   ydb-remove-worktree my-feature
+  ydb-remove-worktree -p pr colleague/their-fix
 EOF
   exit 1
 }
+
+prefix=
+while getopts ":p:h" opt; do
+  case "$opt" in
+    p) prefix=$OPTARG ;;
+    *) usage ;;
+  esac
+done
+shift $((OPTIND - 1))
 
 if [[ $# -ne 1 ]]; then
   usage
@@ -34,9 +48,6 @@ if [[ "$feature_name" == "main" || "$feature_name" == "master" ]]; then
   exit 1
 fi
 
-worktree_path="../ydb-${feature_name}"
-ide_project_dir="${HOME}/ide/ydb-${feature_name}"
-
 # Must be at the main repo root (`.git` is a directory; worktrees use a `.git` file).
 if [[ ! -d .git ]]; then
   echo "error: run this from the main ydb repo root, not a worktree" >&2
@@ -48,6 +59,17 @@ if [[ "$PWD" != "$repo_root" ]]; then
   echo "error: run this from the repo root (${repo_root})" >&2
   exit 1
 fi
+
+slug=${feature_name//\//-}
+if [[ -n "$prefix" ]]; then
+  worktree_path="../${prefix}-${slug}"
+else
+  worktree_path=$(git worktree list --porcelain | awk -v ref="refs/heads/${feature_name}" '
+    /^worktree / { path = substr($0, 10) }
+    $0 == "branch " ref { print path; exit }')
+  worktree_path=${worktree_path:-../ydb-${slug}}
+fi
+ide_project_dir="${HOME}/ide/$(basename "$worktree_path")"
 
 removed_anything=0
 
