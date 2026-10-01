@@ -24,6 +24,15 @@ These rules apply in every repository and every session, on top of the repositor
    test before a whole tablet, a tablet before a whole KQP cluster. One test checks one thing;
    it does not also prove the consequences that another test already covers.
 
+## Source trees
+
+1. `~/dev/arcadia` is a virtual mount of the whole monorepo, effectively infinite. Never
+   search or walk it (`grep -r`, `rg`, `find`, `ls -R`, `du`, globs over directories): it
+   takes forever and the load can get my account banned. Open a file there only by its exact
+   path.
+2. For YDB sources use `~/dev/ydb` (usually a fresh main); searching there is fine. A path
+   `contrib/ydb/<x>` from a stack trace is `~/dev/ydb/ydb/<x>`.
+
 ## Clusters
 
 1. Acceptance, perf and QA clusters (for example `olap-testing-*`, "vla-big") belong to other
@@ -46,15 +55,21 @@ These rules apply in every repository and every session, on top of the repositor
 5. `~/dotfiles` is a public repository. Never put anything sensitive or semi-sensitive there:
    no tokens or credentials, no internal resource ids, issue keys, host names, dashboard links
    or other internal URLs beyond the bare service domains. Use placeholders instead.
+6. When you explain a flow or a structure, in chat or in a note, draw a plain ASCII diagram
+   if a picture shows it faster than prose does: a flow, a sequence diagram (one column per
+   participant, time runs down), a class diagram (boxes with the key members, arrows for owns
+   and calls), or a table of cases. Keep it very simple: at most about five participants or
+   boxes, names from the code, no sentences inside, and it must fit the terminal width.
 
 ## Internal services
 
 Internal pages are reachable only through MCP servers; web search or fetch cannot see them and will report the page as inaccessible. Match a link to a server by the service it belongs to, not by the exact hostname: the same service is served from several domains (different installations, mirrors, old and new names), and the servers do not publish a list. If a tool takes a URL, pass the link as is; otherwise turn it into what the tool expects (page slug, issue key, dashboard reference):
 
 - Wiki pages, usually `wiki.yandex-team.ru`: the `wiki` server.
+- Documentation pages, usually `docs.yandex-team.ru` but also proxied as `<project>.yandex-team.ru/docs/...`: the `docs` server; `read_doc` takes the URL as is and returns the whole page, `read_toc` returns the project's table of contents.
 - Tracker issues, usually `st.yandex-team.ru`: the `tracker_mcp` server.
 - Monitoring dashboards, alerts and metrics (Monium / Solomon UI), usually `monitoring.yandex-team.ru` but also other domains: the `monium_mcp` server; its dashboard tool accepts the full URL.
-- Searching internal sources (wiki, tracker, Arcanum, internal Stack Overflow) or the monorepo by description: the `intrasearch` server. The `wiki` server only opens a page by slug; use `intrasearch` to find the page first.
+- Searching internal sources (wiki, tracker, Arcanum, internal Stack Overflow) or the monorepo by description: the `intrasearch` server. The `wiki` and `docs` servers only open a page you already have the link for; use `intrasearch` to find the page first.
 - Sandbox resources (CI logs, Allure reports, attachments in tracker issues), usually `proxy.sandbox.yandex-team.ru/<id>/...` but also `sandbox.yandex-team.ru/resource/<id>/...` and other hosts: no MCP, download with `ya` from the shell. A link being there does not mean it has to be downloaded: fetch a resource only when the answer needs what is inside it. If the stack trace in the issue already explains the failure, the logs stay where they are. The long number in the URL is the Sandbox resource id; the rest of the URL is a path inside that resource. Put it under `~/tmp/<current branch>/<what it is>/`, so that everything belonging to a finished branch can be deleted together and the name says what the data is (issue key and kind, not the resource id). `--output` must name a directory that does not exist yet. Run it from an arcadia directory (the `ya` on `PATH` resolves tools through the checkout it is run in):
 
   ```bash
