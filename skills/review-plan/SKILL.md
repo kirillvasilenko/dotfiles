@@ -89,6 +89,23 @@ repository root:
 
 Quote identifiers (`TStepAction`) and never a code snippet longer than one line.
 
+## Diagrams
+
+Draw a plain ASCII diagram when a picture shows the change faster than prose does: the path
+through the stops, a sequence diagram of messages between actors (one column per participant,
+time runs down), a class diagram (boxes with the key members, arrows for owns and calls), the
+states of an object, or a table of which piece of code covers which case. The reader reads the plan in vim, so use characters in a fenced block,
+not Mermaid or images, and keep each diagram within the window width. Keep it small: a few boxes
+with names from the code and no sentences inside. Draw one diagram per idea: the header may have
+one for the whole flow, and a stop may have one for its own mechanism.
+
+## Tests
+
+Tests are reviewed only after the code is settled and agreed to be correct, because most of them
+change when the code changes. Until then, read tests only to understand what the code is meant to
+do. Do not look for problems in them, and do not list missing tests. In the plan, tests get one
+line: which test files changed, and that they will be reviewed after the code is settled.
+
 ## Close
 
 End with a short list of properties the reviewer can check while reading: invariants that
