@@ -16,9 +16,12 @@ These rules apply in every repository and every session, on top of the repositor
 
 1. Do not edit sources while a build or a test run is in progress. Queue the edits and
    apply them after the run has ended.
-2. In a review session (I read someone else's change), do not build or run tests unless I
-   ask; deliver findings from reading.
-3. Write logs and temporary files under `~/tmp`, never under `/tmp`.
+2. When only reviewing code, do not build or run tests unless I ask; deliver findings from
+   reading. If I ask you to change code or tests, run the relevant tests before reporting
+   completion, even during a review session. Fix failures caused by your changes and rerun
+   the tests. If a run is blocked, report the blocker; do not claim the change is verified.
+3. Use the tools' default locations for logs and temporary files. Use `junk/` under the current
+   repository root only when there is a concrete reason the default location is unsuitable.
 4. Make a test as small and simple as possible, on the simplest harness that reaches the
    behaviour under test: a unit test with stubs before an actor-system test, an actor-system
    test before a whole tablet, a tablet before a whole KQP cluster. One test checks one thing;
@@ -32,6 +35,8 @@ These rules apply in every repository and every session, on top of the repositor
    path.
 2. For YDB sources use `~/dev/ydb` (usually a fresh main); searching there is fine. A path
    `contrib/ydb/<x>` from a stack trace is `~/dev/ydb/ydb/<x>`.
+3. Edit, build and test in the current checkout. Do not copy the repository or create another
+   checkout or worktree unless I explicitly ask.
 
 ## Clusters
 
@@ -48,6 +53,8 @@ These rules apply in every repository and every session, on top of the repositor
    Answer it; do not change the code unless I ask for a change.
 2. When you point at code, write a path that a fuzzy file finder resolves from the repository
    root, followed by `:line`, and make sure the line is the statement you mean.
+   Put these references in fenced code blocks, without Markdown links or escaped underscores,
+   so they copy as plain paths.
 3. Do not spend effort on formatting; clang-format runs on commit.
 4. Do not write comments that say what the code does or tell the story behind it; such
    comments irritate reviewers. Make the names and the structure say it, and fix the name when
@@ -70,13 +77,13 @@ Internal pages are reachable only through MCP servers; web search or fetch canno
 - Tracker issues, usually `st.yandex-team.ru`: the `tracker_mcp` server.
 - Monitoring dashboards, alerts and metrics (Monium / Solomon UI), usually `monitoring.yandex-team.ru` but also other domains: the `monium_mcp` server; its dashboard tool accepts the full URL.
 - Searching internal sources (wiki, tracker, Arcanum, internal Stack Overflow) or the monorepo by description: the `intrasearch` server. The `wiki` and `docs` servers only open a page you already have the link for; use `intrasearch` to find the page first.
-- Sandbox resources (CI logs, Allure reports, attachments in tracker issues), usually `proxy.sandbox.yandex-team.ru/<id>/...` but also `sandbox.yandex-team.ru/resource/<id>/...` and other hosts: no MCP, download with `ya` from the shell. A link being there does not mean it has to be downloaded: fetch a resource only when the answer needs what is inside it. If the stack trace in the issue already explains the failure, the logs stay where they are. The long number in the URL is the Sandbox resource id; the rest of the URL is a path inside that resource. Put it under `~/tmp/<current branch>/<what it is>/`, so that everything belonging to a finished branch can be deleted together and the name says what the data is (issue key and kind, not the resource id). `--output` must name a directory that does not exist yet. Run it from an arcadia directory (the `ya` on `PATH` resolves tools through the checkout it is run in):
+- Sandbox resources (CI logs, Allure reports, attachments in tracker issues), usually `proxy.sandbox.yandex-team.ru/<id>/...` but also `sandbox.yandex-team.ru/resource/<id>/...` and other hosts: no MCP, download with `ya` from the shell. A link being there does not mean it has to be downloaded: fetch a resource only when the answer needs what is inside it. If the stack trace in the issue already explains the failure, the logs stay where they are. The long number in the URL is the Sandbox resource id; the rest of the URL is a path inside that resource. Put it under `<repo-root>/junk/<current branch>/<what it is>/` in the current checkout, so that everything belonging to a finished branch can be deleted together and the name says what the data is (issue key and kind, not the resource id). `--output` must name a directory that does not exist yet. Run it from an arcadia directory (the `ya` on `PATH` resolves tools through the checkout it is run in):
 
   ```bash
   # working on branch fix-cs-verify, logs of the nemesis run from issue <ISSUE-KEY>
-  cd ~/dev/arcadia && ya download sbr:<resource-id> --output ~/tmp/fix-cs-verify/<ISSUE-KEY>-nemesis-logs
+  cd ~/dev/arcadia && ya download sbr:<resource-id> --output <repo-root>/junk/fix-cs-verify/<ISSUE-KEY>-nemesis-logs
   # https://proxy.sandbox.yandex-team.ru/<resource-id>/data/attachments/<file>.gz
-  # is now ~/tmp/fix-cs-verify/<ISSUE-KEY>-nemesis-logs/data/attachments/<file>.gz
+  # is now <repo-root>/junk/fix-cs-verify/<ISSUE-KEY>-nemesis-logs/data/attachments/<file>.gz
   ```
 
   Resources can be large (a whole Allure report is gigabytes), and a `.gz` attachment there is usually a tar archive with one directory per host.
