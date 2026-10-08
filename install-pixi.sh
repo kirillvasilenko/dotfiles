@@ -9,7 +9,7 @@ MANIFEST="$PIXI_HOME/manifests/pixi-global.toml"
 REPO_MANIFEST="$(pwd)/pixi/pixi-global.toml"
 
 # pixi itself: one static binary in ~/.pixi/bin. PIXI_NO_PATH_UPDATE keeps the
-# installer from editing shell rc files; PATH is handled below.
+# installer from editing shell rc files; install-path.sh handles PATH.
 if [ ! -x "$PIXI_HOME/bin/pixi" ]; then
   echo "Installing pixi to $PIXI_HOME/bin..."
   curl -fsSL https://pixi.sh/install.sh | PIXI_NO_PATH_UPDATE=1 bash
@@ -40,8 +40,8 @@ echo "$MANIFEST → $REPO_MANIFEST"
 case ":$PATH:" in
   *":$PIXI_HOME/bin:"*) ;;
   *)
-    echo "WARNING: $PIXI_HOME/bin is not on PATH. Add to ~/.bashrc:"
-    echo '  export PATH="$HOME/.pixi/bin:$HOME/.local/bin:$HOME/dotfiles/bin:$PATH"'
+    echo "WARNING: $PIXI_HOME/bin is not on PATH."
+    echo "Run ./install-path.sh and source the rc file it reports."
     ;;
 esac
 
