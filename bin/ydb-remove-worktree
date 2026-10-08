@@ -67,7 +67,7 @@ else
   worktree_path=$(git worktree list --porcelain | awk -v ref="refs/heads/${feature_name}" '
     /^worktree / { path = substr($0, 10) }
     $0 == "branch " ref { print path; exit }')
-  worktree_path=${worktree_path:-../ydb-${slug}}
+  worktree_path=${worktree_path:-../${slug}}
 fi
 ide_project_dir="${HOME}/ide/$(basename "$worktree_path")"
 

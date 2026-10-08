@@ -18,7 +18,7 @@ Usage: ydb-add-worktree [-p prefix] <feature_name> [folders_for_ya_ide...]
 Must be run from the main ydb repository (not a worktree).
 
 The branch is created from main when it does not exist yet, and used as is otherwise.
-The worktree goes to ../<prefix>-<feature_name> (prefix defaults to "ydb").
+The worktree goes to ../<feature_name>, or ../<prefix>-<feature_name> with -p.
 
 Examples:
   ydb-add-worktree my-feature
@@ -28,7 +28,7 @@ EOF
   exit 1
 }
 
-prefix=ydb
+prefix=
 while getopts ":p:h" opt; do
   case "$opt" in
     p) prefix=$OPTARG ;;
@@ -37,7 +37,7 @@ while getopts ":p:h" opt; do
 done
 shift $((OPTIND - 1))
 
-if [[ $# -lt 1 || -z "$prefix" ]]; then
+if [[ $# -lt 1 ]]; then
   usage
 fi
 
@@ -51,7 +51,7 @@ else
 fi
 
 slug=${feature_name//\//-}
-worktree_name="${prefix}-${slug}"
+worktree_name="${prefix:+${prefix}-}${slug}"
 worktree_path="../${worktree_name}"
 ide_project_dir="${HOME}/ide/${worktree_name}"
 workspace_name="${worktree_name}"

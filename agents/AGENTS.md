@@ -35,8 +35,9 @@ These rules apply in every repository and every session, on top of the repositor
    path. Exception: `~/junk` and its contents may be freely listed, searched, traversed,
    and edited, even though `~/junk` points inside Arcadia. Keep those operations scoped
    to that subtree; the exception does not extend to the rest of the mount.
-2. For YDB sources use `~/dev/ydb` (usually a fresh main); searching there is fine. A path
-   `contrib/ydb/<x>` from a stack trace is `~/dev/ydb/ydb/<x>`.
+2. YDB checkouts live under `~/ydb`: `~/ydb/main` is the main checkout, with worktrees
+   alongside it. Searching there is fine. A path `contrib/ydb/<x>` from a stack trace
+   is `ydb/<x>` relative to the current YDB checkout.
 3. Edit, build and test in the current checkout. Do not copy the repository or create another
    checkout or worktree unless I explicitly ask.
 

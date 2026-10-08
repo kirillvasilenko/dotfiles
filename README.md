@@ -112,11 +112,22 @@ The installer forwards `SSH_AUTH_SOCK` to MCP processes and repairs existing reg
 
 For Claude, after installing it, run `bash ~/junk/install-claude-mcp.sh`.
 
+## YDB layout
+
+```text
+~/ydb/
+  main/
+  <branch>/
+  pr-<branch>/
+```
+
+Use `official` for `ydb-platform/ydb` and `fork` for your fork. Run worktree helpers from `~/ydb/main`; they create sibling directories.
+
 ## Personal scripts
 
 Already on PATH:
 
-- `ydb-add-worktree [-p pr] BRANCH` — run from the main YDB checkout.
+- `ydb-add-worktree [-p pr] BRANCH` — run from `~/ydb/main`.
 - `ydb-remove-worktree BRANCH` — remove its worktree, merged branch, and IDE files.
 - `gh-pr-comments PR` — your unresolved review threads; `-a` for everyone, `-r` to include resolved threads.
 
