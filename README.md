@@ -1,113 +1,125 @@
 # dotfiles
 
-## Neovim
+Follow in order. Run install scripts from `~/dotfiles` on the machine being set up.
+
+## GitHub and Git
+
+Prerequisites: Bash, Git, curl, tar, [gh](https://cli.github.com/); [Homebrew](https://brew.sh/) on macOS.
 
 ```bash
-./install-nvim.sh
+gh auth login --hostname github.com --git-protocol https --web
+gh auth setup-git
+git clone https://github.com/kirillvasilenko/dotfiles.git ~/dotfiles
+cd ~/dotfiles
 ```
 
-## Tmux
+Replace the example name and email:
 
 ```bash
-./install-tmux.sh
+git config --global user.name "Your Name"
+git config --global user.email "work@example.com"
 ```
 
-Symlinks `~/.tmux.conf` to [`tmux/.tmux.conf`](tmux/.tmux.conf), clones [TPM](https://github.com/tmux-plugins/tpm) into `~/.tmux/plugins/tpm` (or updates it), and installs the `@plugin` entries so `<prefix>I` is not needed on a fresh machine. Re-run it after adding a plugin to the config, or press `<prefix>I` inside tmux.
+Override per repository with `git config --local user.email "personal@example.com"`.
 
-## npm
+## PATH and tools
 
 ```bash
+./install-path.sh
+source ~/.bashrc  # Zsh: source "${ZDOTDIR:-$HOME}/.zshrc"
+./install-pixi.sh  # Linux; on macOS use ./install-brew.sh instead
 ./install-npm.sh
 ```
 
-Symlinks `~/.npmrc` to [`npm/.npmrc`](npm/.npmrc), which sets npm's global prefix to `~/.local`, so `npm install -g` (and self-updaters such as `codex update`) never need root and never depend on where `node` itself lives (a system `/usr/local` owned by root, a read-only store, a pixi env). Global packages land in `~/.local/lib/node_modules` with their binaries in `~/.local/bin`, which must be on `PATH`.
+PATH includes Pixi, `~/.local/bin`, and `~/dotfiles/bin`. npm installs global packages under `~/.local` without sudo.
 
-## Personal scripts (`bin/`)
+To change tools, edit [pixi/pixi-global.toml](pixi/pixi-global.toml) and run `pixi global sync` (not `pixi global install`). On macOS, edit [brew/Brewfile](brew/Brewfile) and rerun the installer.
 
-Executable helpers live in [`bin/`](bin/) (e.g. `ydb-add-worktree` / `ydb-remove-worktree`, mirroring `git worktree add|remove`). The worktree folder is `../ydb-<branch>` by default; `-p pr` makes it `../pr-<branch>` for reviewing someone else's PR, and `ydb-remove-worktree` finds the folder by branch whatever its prefix. Put the directory on `PATH` (see [CLI tools](#cli-tools)).
-
-`gh-pr-comments` lists the review threads you're part of in a GitHub PR, each with a permalink straight to your own comment. It exists because GitHub unanchors a thread from the diff as soon as a commit touches the commented line: the thread is flagged `Outdated`, drops off the Files changed tab, and the comments panel will not reliably open it. The permalink still works, so the job is getting the list of URLs. It queries GraphQL `reviewThreads` rather than the REST comments endpoint, because REST reports neither `isOutdated` nor `isResolved`.
+## Tmux and Neovim
 
 ```bash
-gh-pr-comments https://github.com/owner/repo/pull/1234   # yours, unresolved (the default)
-gh-pr-comments 1234        # from inside the checkout
-gh-pr-comments -r 1234     # yours, resolved and unresolved
-gh-pr-comments -a 1234     # everyone's, unresolved
-gh-pr-comments -ar 1234    # everyone's, everything
-gh-pr-comments -m 1234     # markdown    -i: fzf picker    -u LOGIN: someone else's
+./install-tmux.sh
+./install-nvim.sh
+nvim
 ```
 
-Output columns are the thread's resolution state (`OPEN`/`resolved`) and its diff anchoring (`OUTDATED`/`current`) — independent of each other. Unresolved sorts first. Needs `gh auth login`.
+Wait for plugins to install. Check `:Lazy` and `:Mason`; errors are in `:MasonLog`.
 
-## Agent rules (`agents/`)
+## Agent rules and skills
 
-[`agents/AGENTS.md`](agents/AGENTS.md) holds the rules every coding agent must follow in every
-repository (never commit, never stage without being asked, no source edits during builds, and so
-on). Each tool reads it through a symlink to its own global instruction file:
+Install and authenticate your agent applications separately, then:
 
 ```bash
-ln -s ~/dotfiles/agents/AGENTS.md ~/.claude/CLAUDE.md   # Claude Code
-ln -s ~/dotfiles/agents/AGENTS.md ~/.codex/AGENTS.md    # Codex
-ln -s ~/dotfiles/agents/AGENTS.md ~/.gemini/GEMINI.md   # Gemini CLI
+./install-agents.sh
 ```
 
-Cursor has no global rules file; paste the same text into Settings > Rules > User Rules.
+Links rules and individual skills for Codex, Claude Code, and Gemini. Resolve any reported conflicts and rerun. Restart agents afterward.
 
-## Agent skills (`skills/`)
+## SSH forwarding and Arcadia
 
-Skills shared by every coding agent live in [`skills/`](skills/), one directory per skill with a
-`SKILL.md`. Cursor, Claude Code and Codex discover them through symlinks. Claude Code also writes its own synced skills into `~/.claude/skills`, so that one must be a real directory with one symlink per skill, never a link to the whole `skills/` directory (otherwise the synced bundle lands in this repo):
+Requires Skotty on the Mac and `arc` on Linux. On the **Mac**, add this inside the new server's `Host` section in `~/.ssh/config`:
 
-```bash
-ln -s ~/dotfiles/skills ~/.cursor/skills
-mkdir -p ~/.claude/skills
-for s in ~/dotfiles/skills/*/; do ln -s "$s" ~/.claude/skills/; done
+```sshconfig
+ForwardAgent yes
 ```
 
-Codex loads them from `~/.codex/skills`, which gets the same per-skill symlinks:
+Reconnect. In the fresh **Linux shell**, before attaching to tmux:
 
 ```bash
-for s in ~/dotfiles/skills/*/; do ln -s "$s" ~/.codex/skills/; done
+echo "$SSH_AUTH_SOCK"
+ssh-add -l
 ```
 
-## Agent MCP servers
-
-MCP servers are not kept in this repo. They are registered per machine with `claude mcp add` and `codex mcp add`, and the work servers depend on the internal `ya`, so the server list and the install scripts (one per agent) live in my arcadia junk directory. On a new machine first link your junk directory, wherever it is, as `~/junk` (for example `ln -s ~/dev/arcadia/junk/<login> ~/junk`), then run those scripts; each script explains its own quirks. Which server an agent should use for what is in [`agents/AGENTS.md`](agents/AGENTS.md).
-
-The scripts also run this, because the bridge creates its token world-readable; do it by hand if you connected a server before running them:
+The socket must be set and keys listed. Then, unless already mounted:
 
 ```bash
+mkdir -p ~/arcadia
+arc mount --ssh-tokens ~/arcadia
+```
+
+## ya and junk
+
+```bash
+cd ~/arcadia
+./ya --help
+mkdir -p ~/.local/bin
+ln -s ~/arcadia/ya ~/.local/bin/ya
+hash -r
+command -v ya  # should resolve under ~/.local/bin
+```
+
+Skip links that already exist. Replace `YOUR_LOGIN` with your junk directory name; make its branch available first if needed:
+
+```bash
+ln -s ~/arcadia/junk/YOUR_LOGIN ~/junk
+```
+
+## MCP servers
+
+Run from a shell with working SSH forwarding:
+
+```bash
+mkdir -p ~/.mcp
 chmod 700 ~/.mcp
+cd ~/arcadia
+ya whoami
+ya tool mcp --help
+bash ~/junk/install-codex-mcp.sh
+codex mcp list
 ```
 
-## CLI tools
+The installer forwards `SSH_AUTH_SOCK` to MCP processes and repairs existing registrations. Fully restart Codex from this shell; check connections with `/mcp`. Old tmux/agent processes may have a missing or expired socket.
 
-The same tool set (neovim, tmux, ripgrep, fd, tree-sitter CLI, node, go, python) is installed per user, without root, by the native package manager of each platform. Both files are plain lists you edit by hand.
+For Claude, after installing it, run `bash ~/junk/install-claude-mcp.sh`.
 
-### macOS: Homebrew
+## Personal scripts
 
-```bash
-./install-brew.sh
-```
+Already on PATH:
 
-Runs `brew bundle` on [`brew/Brewfile`](brew/Brewfile). Edit the file and re-run to add or remove tools.
+- `ydb-add-worktree [-p pr] BRANCH` — run from the main YDB checkout.
+- `ydb-remove-worktree BRANCH` — remove its worktree, merged branch, and IDE files.
+- `gh-pr-comments PR` — your unresolved review threads; `-a` for everyone, `-r` to include resolved threads.
 
-### Linux: pixi (conda-forge)
+## Still to set up
 
-```bash
-./install-pixi.sh
-```
-
-Installs [pixi](https://pixi.sh) (one static binary in `~/.pixi/bin`) if missing, symlinks `~/.pixi/manifests/pixi-global.toml` to [`pixi/pixi-global.toml`](pixi/pixi-global.toml), and runs `pixi global sync`. Everything lives under `~/.pixi`; conda-forge packages bring their own libraries, so no system packages are needed. No environment activation: each exposed command is a launcher in `~/.pixi/bin`.
-
-To change tools, edit the manifest and run `pixi global sync`. Do **not** use `pixi global install`: it rewrites the manifest in its own layout.
-
-### PATH
-
-Nothing edits your shell rc. Add once to `~/.bashrc` (or `~/.zshrc`), first so these win over `/usr/local` and system copies:
-
-```bash
-export PATH="$HOME/.pixi/bin:$HOME/.local/bin:$HOME/dotfiles/bin:$PATH"
-```
-
-On macOS Homebrew's own `brew shellenv` line replaces the `~/.pixi/bin` part.
+YDB checkout, remaining internal tools, agent application installation, and automatic off-machine backups of unfinished work, review notes, and agent conversations. Test restoring those backups.
