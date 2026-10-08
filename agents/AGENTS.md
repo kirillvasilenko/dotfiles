@@ -29,10 +29,12 @@ These rules apply in every repository and every session, on top of the repositor
 
 ## Source trees
 
-1. `~/dev/arcadia` is a virtual mount of the whole monorepo, effectively infinite. Never
+1. `~/arcadia` is a virtual mount of the whole monorepo, effectively infinite. Never
    search or walk it (`grep -r`, `rg`, `find`, `ls -R`, `du`, globs over directories): it
    takes forever and the load can get my account banned. Open a file there only by its exact
-   path.
+   path. Exception: `~/junk` and its contents may be freely listed, searched, traversed,
+   and edited, even though `~/junk` points inside Arcadia. Keep those operations scoped
+   to that subtree; the exception does not extend to the rest of the mount.
 2. For YDB sources use `~/dev/ydb` (usually a fresh main); searching there is fine. A path
    `contrib/ydb/<x>` from a stack trace is `~/dev/ydb/ydb/<x>`.
 3. Edit, build and test in the current checkout. Do not copy the repository or create another
@@ -81,7 +83,7 @@ Internal pages are reachable only through MCP servers; web search or fetch canno
 
   ```bash
   # working on branch fix-cs-verify, logs of the nemesis run from issue <ISSUE-KEY>
-  cd ~/dev/arcadia && ya download sbr:<resource-id> --output <repo-root>/junk/fix-cs-verify/<ISSUE-KEY>-nemesis-logs
+  ya download sbr:<resource-id> --output <repo-root>/junk/fix-cs-verify/<ISSUE-KEY>-nemesis-logs
   # https://proxy.sandbox.yandex-team.ru/<resource-id>/data/attachments/<file>.gz
   # is now <repo-root>/junk/fix-cs-verify/<ISSUE-KEY>-nemesis-logs/data/attachments/<file>.gz
   ```
