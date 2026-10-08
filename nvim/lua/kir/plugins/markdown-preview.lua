@@ -2,11 +2,8 @@ return {
   "iamcco/markdown-preview.nvim",
   cmd = { "MarkdownPreview", "MarkdownPreviewStop", "MarkdownPreviewToggle" },
   ft = { "markdown" },
-  -- Download the prebuilt server binary. `cd app && npm install` only pulls a
-  -- subset of deps and breaks with "Cannot find module 'msgpack-lite'".
-  build = function()
-    vim.fn["mkdp#util#install"]()
-  end,
+  -- A command build loads the plugin before resolving its autoload function.
+  build = ":call mkdp#util#install_sync()",
   init = function()
     -- Work happens on a remote server, so launching a browser there is meaningless.
     vim.g.mkdp_browser = ""
