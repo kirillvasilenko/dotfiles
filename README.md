@@ -131,6 +131,11 @@ Already on PATH:
 - `ydb-remove-worktree BRANCH` — remove its worktree, merged branch, and IDE files.
 - `gh-pr-comments PR` — your unresolved review threads; `-a` for everyone, `-r` to include resolved threads.
 
+## Development backups
+
+Code, configuration example, tests, and [setup and restore instructions](backup/README.md)
+live under `backup/`. The `dev-backup` command is linked from `bin/`.
+
 ## Still to set up
 
-YDB checkout, remaining internal tools, agent application installation, and automatic off-machine backups of unfinished work, review notes, and agent conversations. Test restoring those backups.
+YDB checkout, remaining internal tools, and agent application installation.

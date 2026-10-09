@@ -1,0 +1,20 @@
+host = "dev-server"            # SSH alias, or "local"
+home = "~"                    # On the selected machine
+backup_dir = "~/Backups/dev"   # On the machine running dev-backup
+interval_minutes = 10
+keep_snapshots = 144
+
+[files]
+include = [
+    "slice",
+    "ydb/*/sync",
+    ".codex/sessions",
+    ".codex/archived_sessions",
+    ".claude/projects",
+]
+
+[[git]]
+include = ["ydb/*"]
+untracked = ["*.md", "notes/**"]
+
+# Add another [[git]] section for checkouts with different untracked selections.
