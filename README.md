@@ -6,6 +6,12 @@ Follow in order. Run install scripts from `~/dotfiles` on the machine being set 
 
 Prerequisites: Bash, Git, curl, tar, [gh](https://cli.github.com/); [Homebrew](https://brew.sh/) on macOS.
 
+On macOS, install `gh` before continuing (it is also included in the Brewfile):
+
+```bash
+brew install gh
+```
+
 ```bash
 gh auth login --hostname github.com --git-protocol https --web
 gh auth setup-git
@@ -53,7 +59,24 @@ Install and authenticate your agent applications separately, then:
 ./install-agents.sh
 ```
 
-Links rules and individual skills for Codex, Claude Code, and Gemini. Resolve any reported conflicts and rerun. Restart agents afterward.
+For Codex's default permissions, run once:
+
+```bash
+./install-codex-permissions.sh
+```
+
+This adds **Approve for me** and write access to `~/junk`, `~/dotfiles`, `~/.ya`,
+and `~/slice`. Restart Codex afterward.
+
+If permission settings already exist, edit them in `~/.codex/config.toml` instead.
+These settings go before any `[section]`; replace `/YOUR/HOME` with your home path:
+
+```toml
+approval_policy = "on-request"
+approvals_reviewer = "auto_review"
+sandbox_mode = "workspace-write"
+sandbox_workspace_write.writable_roots = ["/YOUR/HOME/junk", "/YOUR/HOME/dotfiles", "/YOUR/HOME/.ya", "/YOUR/HOME/slice"]
+```
 
 ## SSH forwarding and Arcadia
 

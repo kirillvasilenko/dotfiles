@@ -1,5 +1,6 @@
 # Per-user CLI tools on macOS. Install/update with ./install-brew.sh
-# (`brew bundle --file=brew/Brewfile`). Same tool set as pixi/pixi-global.toml.
+# (`brew bundle --file=brew/Brewfile`). Linux tools: pixi/pixi-global.toml.
+brew "gh"
 brew "neovim"
 brew "tmux"
 brew "ripgrep"

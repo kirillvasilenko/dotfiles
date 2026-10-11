@@ -20,12 +20,19 @@ sources=("$repo_dir/agents/AGENTS.md" "$repo_dir/agents/AGENTS.md" "$repo_dir/ag
 destinations=("$codex_dir/AGENTS.md" "$claude_dir/CLAUDE.md" "$target_home/.gemini/GEMINI.md")
 skill_dirs=("$target_home/.agents/skills" "$claude_dir/skills")
 
-for skill_file in "$repo_dir"/skills/*/SKILL.md; do
+for skill_file in "$repo_dir"/skills/*/SKILL.md "$target_home"/junk/skills/*/SKILL.md; do
   [ -f "$skill_file" ] || continue
   skill_dir="$(dirname "$skill_file")"
   for destination in "${skill_dirs[@]}"; do
+    link="$destination/$(basename "$skill_dir")"
+    for existing in "${destinations[@]}"; do
+      if [ "$existing" = "$link" ]; then
+        echo "Duplicate skill name: $(basename "$skill_dir"). Rename one of the source directories." >&2
+        exit 1
+      fi
+    done
     sources+=("$skill_dir")
-    destinations+=("$destination/$(basename "$skill_dir")")
+    destinations+=("$link")
   done
 done
 
@@ -71,4 +78,7 @@ for i in "${!destinations[@]}"; do
   echo "Linked: $destination → ${sources[$i]}"
 done
 
+if [ ! -d "$target_home/junk/skills" ]; then
+  echo "No ~/junk/skills directory yet. Re-run this installer after setting up ~/junk."
+fi
 echo "Done! Restart your agents to load the rules and skills."
