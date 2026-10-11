@@ -70,7 +70,21 @@ echo "$SSH_AUTH_SOCK"
 ssh-add -l
 ```
 
-The socket must be set and keys listed. Then, unless already mounted:
+The socket must be set and keys listed. The forwarded socket path changes on every connection, so give it a stable name:
+
+```bash
+cd ~/dotfiles
+./install-ssh-agent.sh
+```
+
+It adds a hook to `~/.ssh/rc` that links `~/.ssh/ssh_auth_sock` to the forwarded socket at login, and points `SSH_AUTH_SOCK` at that link in the shell rc. Reconnect once more and check:
+
+```bash
+ls -l ~/.ssh/ssh_auth_sock  # a symlink to a live socket
+ssh-add -l
+```
+
+Then, unless already mounted:
 
 ```bash
 mkdir -p ~/arcadia
@@ -88,7 +102,15 @@ hash -r
 command -v ya  # should resolve under ~/.local/bin
 ```
 
-Skip links that already exist. Replace `YOUR_LOGIN` with your junk directory name; make its branch available first if needed:
+Skip links that already exist. Replace `YOUR_LOGIN` with your junk directory name. If the directory lives on a personal branch, fetch and check it out first; personal branches are not fetched by default:
+
+```bash
+cd ~/arcadia
+arc fetch users/YOUR_LOGIN/
+arc branch --all
+arc checkout -b junk arcadia/users/YOUR_LOGIN/junk
+arc status  # On branch junk
+```
 
 ```bash
 ln -s ~/arcadia/junk/YOUR_LOGIN ~/junk
@@ -96,7 +118,7 @@ ln -s ~/arcadia/junk/YOUR_LOGIN ~/junk
 
 ## MCP servers
 
-Run from a shell with working SSH forwarding:
+Run from a shell reconnected after `install-ssh-agent.sh`; the Codex installer refuses to run without its `~/.ssh/rc` hook:
 
 ```bash
 mkdir -p ~/.mcp
@@ -108,9 +130,14 @@ bash ~/junk/install-codex-mcp.sh
 codex mcp list
 ```
 
-The installer forwards `SSH_AUTH_SOCK` to MCP processes and repairs existing registrations. Fully restart Codex from this shell; check connections with `/mcp`. Old tmux/agent processes may have a missing or expired socket.
+The installer points MCP processes at `~/.ssh/ssh_auth_sock` and repairs existing registrations. Fully restart Codex from this shell; check connections with `/mcp`. Old tmux/agent processes may have a missing or expired socket.
 
-For Claude, after installing it, run `bash ~/junk/install-claude-mcp.sh`.
+For Claude, after installing it:
+
+```bash
+bash ~/junk/install-claude-mcp.sh
+claude mcp list
+```
 
 ## YDB layout
 
