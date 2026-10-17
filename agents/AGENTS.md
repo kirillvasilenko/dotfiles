@@ -20,12 +20,24 @@ These rules apply in every repository and every session, on top of the repositor
    reading. If I ask you to change code or tests, run the relevant tests before reporting
    completion, even during a review session. Fix failures caused by your changes and rerun
    the tests. If a run is blocked, report the blocker; do not claim the change is verified.
+   Relevant tests are the ones that exercise what you changed; for a small change, a few of
+   them as a smoke test. Do not run whole suites: CI runs everything.
 3. Use the tools' default locations for logs and temporary files. Use `junk/` under the current
    repository root only when there is a concrete reason the default location is unsuitable.
 4. Make a test as small and simple as possible, on the simplest harness that reaches the
    behaviour under test: a unit test with stubs before an actor-system test, an actor-system
    test before a whole tablet, a tablet before a whole KQP cluster. One test checks one thing;
    it does not also prove the consequences that another test already covers.
+
+## Files I do not commit
+
+Every changed or untracked file outside `junk/` (repository root, ignored by git) is code I
+review and commit for the current step. Keep everything else under `junk/`:
+
+1. Plans, results, notes, scripts and review plans worth keeping: `junk/keep/`. Only
+   this folder is backed up.
+2. Big or rebuildable data (downloaded logs, databases, experiment outputs):
+   anywhere else under `junk/`.
 
 ## Source trees
 
