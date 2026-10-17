@@ -7,7 +7,7 @@ keep_snapshots = 144
 [files]
 include = [
     "slice",
-    "ydb/*/sync",
+    "ydb/*/junk/keep",
     ".codex/sessions",
     ".codex/archived_sessions",
     ".claude/projects",
@@ -15,6 +15,6 @@ include = [
 
 [[git]]
 include = ["ydb/*"]
-untracked = ["*.md", "notes/**"]
+untracked = ["**"]
 
 # Add another [[git]] section for checkouts with different untracked selections.
