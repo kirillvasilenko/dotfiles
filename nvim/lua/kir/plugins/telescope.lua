@@ -260,10 +260,33 @@ return {
       vim.cmd("tabnext")
     end
 
+    local function open_exact(link)
+      local path, row, col = require("telescope.utils").__separate_file_path_location(link)
+      if vim.fn.filereadable(path) == 0 then
+        return false
+      end
+      vim.cmd.edit(vim.fn.fnameescape(path))
+      if row then
+        pcall(vim.api.nvim_win_set_cursor, 0, { row, math.max((col or 1) - 1, 0) })
+        vim.cmd("normal! zz")
+      end
+      return true
+    end
+
+    local function open_top_match(picker)
+      picker:clear_completion_callbacks()
+      if picker.manager:num_results() == 0 then
+        return
+      end
+      vim.schedule(function()
+        select_and_center(actions.select_default)(picker.prompt_bufnr)
+      end)
+    end
+
     -- Review workflow: the plan (with `path:line` links) lives in one pane or tab,
     -- the code in the other. Yank the next link, go to the other place, and find it.
     -- find_files parses `path:line` itself and jumps to the line on <CR>.
-    keymap.set("n", "<leader>fl", function()
+    local function follow_next_link(pick)
       local link, lnum, col = next_backtick_span()
       if not link then
         vim.notify("No `link` found after the cursor", vim.log.levels.WARN)
@@ -272,7 +295,19 @@ return {
       vim.fn.setreg('"', link)
       vim.api.nvim_win_set_cursor(0, { lnum, col - 1 })
       goto_other_place()
-      builtin.find_files({ default_text = link })
+      if pick then
+        builtin.find_files({ default_text = link })
+      elseif not open_exact(link) then
+        -- picker stays open when nothing matched
+        builtin.find_files({ default_text = link, on_complete = { open_top_match } })
+      end
+    end
+
+    keymap.set("n", "<leader>fl", function()
+      follow_next_link(false)
+    end, { desc = "Open next `link` in the other pane/tab" })
+    keymap.set("n", "<leader>fL", function()
+      follow_next_link(true)
     end, { desc = "Find next `link` in the other pane/tab" })
 
   end,
