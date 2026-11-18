@@ -21,6 +21,7 @@ local index_state = {} ---@type table<integer, { seen_begin: boolean, seen_end: 
 
 -- Per client so LspRestart cannot reuse the old client's idle.
 local file_state = {} ---@type table<integer, table<string, string>>
+local buffer_keys = {} ---@type table<integer, string[]>
 local refresh_queued = false
 local last_notify = { msg = nil, at = 0 }
 
@@ -109,12 +110,16 @@ local function set_file_state(client_id, uri, state)
   end
 end
 
-local function get_file_state(client_id, uri)
+local function update_buffer_keys(bufnr)
+  buffer_keys[bufnr] = uri_keys(vim.uri_from_bufnr(bufnr))
+end
+
+local function get_file_state(client_id, bufnr)
   local map = file_state[client_id]
   if not map then
     return nil
   end
-  for _, key in ipairs(uri_keys(uri)) do
+  for _, key in ipairs(buffer_keys[bufnr] or { vim.uri_from_bufnr(bufnr) }) do
     local state = map[key]
     if state ~= nil then
       return state
@@ -180,7 +185,7 @@ function M.not_parsed(client, bufnr)
 
   -- Always wait for this file's clangd fileStatus. After LspRestart the
   -- map is empty, so we stay not-ready until the new client reports idle.
-  local state = get_file_state(client.id, vim.uri_from_bufnr(bufnr))
+  local state = get_file_state(client.id, bufnr)
   if state ~= "idle" then
     if state == nil then
       return "clangd has not parsed this file yet"
@@ -310,6 +315,7 @@ api.nvim_create_autocmd("LspProgress", {
 api.nvim_create_autocmd("LspAttach", {
   group = augroup,
   callback = function(ev)
+    update_buffer_keys(ev.buf)
     local client = vim.lsp.get_client_by_id(ev.data.client_id)
     if client and client.name == "clangd" then
       M.wrap_client(client)
@@ -346,6 +352,15 @@ api.nvim_create_autocmd("BufDelete", {
     if ok and uri then
       clear_file_uri(uri)
     end
+    buffer_keys[ev.buf] = nil
+  end,
+})
+
+api.nvim_create_autocmd("BufFilePost", {
+  group = augroup,
+  callback = function(ev)
+    update_buffer_keys(ev.buf)
+    refresh_ui()
   end,
 })
 
@@ -355,6 +370,7 @@ api.nvim_create_autocmd("BufDelete", {
 api.nvim_create_autocmd("BufReadPost", {
   group = augroup,
   callback = function(ev)
+    update_buffer_keys(ev.buf)
     -- Telescope / other previewers use unlisted buffers. Same URI as the
     -- real file — clearing that would make K/gd fail while you preview.
     if not vim.bo[ev.buf].buflisted then
@@ -374,6 +390,12 @@ api.nvim_create_autocmd("BufReadPost", {
     refresh_ui()
   end,
 })
+
+for _, bufnr in ipairs(api.nvim_list_bufs()) do
+  if api.nvim_buf_is_loaded(bufnr) then
+    update_buffer_keys(bufnr)
+  end
+end
 
 for _, client in ipairs(vim.lsp.get_clients({ name = "clangd" })) do
   M.wrap_client(client)
