@@ -50,7 +50,7 @@ keymap.set("n", "<leader>bn", "<cmd>enew<CR>", { desc = "New empty buffer" })
 keymap.set("n", "<leader>bd", function()
   delete_buffer(0)
 end, { desc = "Delete buffer" })
-keymap.set("n", "<leader>bo", buffer_only_soft, { desc = "Delete other unmodified buffers" })
+keymap.set("n", "<leader>bo", buffer_only_soft, { desc = "Close other saved buffers" })
 
 -- tab management (next/prev: Neovim defaults gt / gT)
 keymap.set("n", "<leader>tn", "<cmd>tabnew<CR>", { desc = "Open new tab" }) -- open new tab
