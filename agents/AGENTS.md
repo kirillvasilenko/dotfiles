@@ -83,6 +83,8 @@ review and commit for the current step. Keep everything else under `junk/`:
    participant, time runs down), a class diagram (boxes with the key members, arrows for owns
    and calls), or a table of cases. Keep it very simple: at most about five participants or
    boxes, names from the code, no sentences inside, and it must fit the terminal width.
+7. A code review plan for me goes to a file, `junk/keep/review_<step>.md`, not to the
+   chat: files in reading order, what to check in each, which tests ran.
 
 ## Internal services
 
