@@ -32,7 +32,8 @@ local state = {
   count = 0,
   pr = nil, -- last resolved PR: number, owner, repo, headRefOid
   float_thread = nil, -- thread rendered in the open float, for r / R
-  diff_cache = {}, -- "pr:path" -> commentable line set
+  diff_cache = {},
+  diff_context = nil,
 }
 
 --- Ask git, don't probe the filesystem: in a linked worktree `.git` is a file
@@ -371,6 +372,8 @@ local function load(pr, only_mine)
 
   state.root = root
   state.pr = info
+  state.diff_cache = {}
+  state.diff_context = nil
   state.by_path = {}
   state.count = 0
   for _, line in ipairs(vim.split(out, "\n")) do
@@ -457,18 +460,24 @@ local function ensure_pr()
   if dir == "" then
     dir = vim.fn.getcwd()
   end
-  local root = state.root or repo_root(dir)
+  local root
+  if diffview_target(vim.api.nvim_get_current_buf()) then
+    root = state.root or repo_root(vim.fn.getcwd())
+  else
+    root = repo_root(dir)
+  end
   if not root then
     return nil, "not inside a git repo"
   end
-  state.root = root
-  if state.pr then
+  local head = run({ "git", "rev-parse", "HEAD" }, root)
+  if state.root == root and state.pr and head and vim.trim(head) == state.pr.headRefOid then
     return state.pr
   end
   local info, err = pr_info(root, nil)
   if not info then
     return nil, err
   end
+  state.root = root
   state.pr = info
   return info
 end
@@ -522,8 +531,12 @@ end
 ---@return table|nil sides { right = {[line]=true}, left = {[line]=true} }
 ---@return string|nil err
 local function commentable_lines(info, path)
-  state.diff_cache = state.diff_cache or {}
-  local key = string.format("%d:%s", info.number, path)
+  local context = table.concat({ state.root, info.owner, info.repo, tostring(info.number), info.headRefOid }, "\0")
+  if state.diff_context ~= context then
+    state.diff_cache = {}
+    state.diff_context = context
+  end
+  local key = path
   if state.diff_cache[key] then
     return state.diff_cache[key]
   end
@@ -875,6 +888,11 @@ local function clear()
   end
   state.by_path = {}
   state.count = 0
+  state.pr = nil
+  state.root = nil
+  state.float_thread = nil
+  state.diff_cache = {}
+  state.diff_context = nil
 end
 
 -- Re-mark buffers opened after the fetch (e.g. jumping through the quickfix list).
