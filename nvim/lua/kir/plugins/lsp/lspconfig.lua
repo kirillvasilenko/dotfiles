@@ -71,7 +71,7 @@ return {
         -- <leader>xD  [custom]  buffer diagnostics (Telescope)      unbound
         --
         -- Misc
-        -- <leader>rs  [custom]  restart LSP client                  unbound
+        -- <leader>cr  [custom]  restart LSP client                  unbound
         -- grl         [custom]  toggle inlay hints                  unbound (Vim: virtual-replace "l")
         --             also: :LspInlayHintToggle
         --
@@ -125,7 +125,7 @@ return {
         -- Misc
         ----------------------------------------------------------------------
         opts.desc = "Restart LSP"
-        keymap.set("n", "<leader>rs", "<cmd>lsp restart<CR>", opts)
+        keymap.set("n", "<leader>cr", "<cmd>lsp restart<CR>", opts)
 
         opts.desc = "Toggle inlay hints"
         keymap.set("n", "grl", toggle_inlay_hints, opts)
