@@ -17,27 +17,20 @@ local function delete_buffer(buf)
   require("bufdelete").bufdelete(buf, false)
 end
 
--- Close other listed buffers that are unmodified; leave dirty ones for manual save/discard.
-local function buffer_only_soft()
-  local current = vim.api.nvim_get_current_buf()
-  local closed, kept = 0, 0
+local function close_hidden_saved_buffers()
+  local closed = 0
   for _, buf in ipairs(vim.api.nvim_list_bufs()) do
-    if buf ~= current and vim.bo[buf].buflisted then
-      if vim.bo[buf].modified then
-        kept = kept + 1
-      elseif pcall(delete_buffer, buf) then
+    if vim.api.nvim_buf_is_valid(buf) and vim.bo[buf].buflisted and not vim.bo[buf].modified
+      and vim.bo[buf].buftype ~= "terminal" and #vim.fn.win_findbuf(buf) == 0 then
+      local ok, err = pcall(vim.cmd.bdelete, { count = buf })
+      if not ok then
+        vim.notify(tostring(err), vim.log.levels.WARN)
+      elseif not vim.api.nvim_buf_is_valid(buf) or not vim.bo[buf].buflisted then
         closed = closed + 1
       end
     end
   end
-  if kept > 0 then
-    vim.notify(
-      string.format("Closed %d buffer(s), kept %d modified", closed, kept),
-      vim.log.levels.WARN
-    )
-  else
-    vim.notify(string.format("Closed %d buffer(s)", closed), vim.log.levels.INFO)
-  end
+  vim.notify(closed == 0 and "Nothing to close" or string.format("Closed %d buffer(s)", closed))
 end
 
 keymap.set("n", "]b", "<cmd>bnext<CR>", { desc = "Next buffer" })
@@ -50,7 +43,7 @@ keymap.set("n", "<leader>bn", "<cmd>enew<CR>", { desc = "New empty buffer" })
 keymap.set("n", "<leader>bd", function()
   delete_buffer(0)
 end, { desc = "Delete buffer" })
-keymap.set("n", "<leader>bo", buffer_only_soft, { desc = "Close other saved buffers" })
+keymap.set("n", "<leader>bo", close_hidden_saved_buffers, { desc = "Close hidden saved buffers" })
 
 -- tab management (next/prev: Neovim defaults gt / gT)
 keymap.set("n", "<leader>tn", "<cmd>tabnew<CR>", { desc = "Open new tab" }) -- open new tab

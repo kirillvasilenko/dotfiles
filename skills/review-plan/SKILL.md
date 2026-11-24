@@ -1,6 +1,6 @@
 ---
 name: review-plan
-description: Write a review plan (REVIEW_PLAN*.md) that walks a reviewer through a code change in execution order, stop by stop, with telescope-resolvable file:line links. Use whenever asked for a review plan, a reading order for a diff, a guide for reviewing a branch or a colleague's pull request, or "how should I review this". Not for the review itself, and not for a summary of the change.
+description: Write a review plan (a markdown file) that walks a reviewer through a code change in execution order, stop by stop, with telescope-resolvable file:line links. Use whenever asked for a review plan, a reading order for a diff, a guide for reviewing a branch or a colleague's pull request, or "how should I review this". Not for the review itself, and not for a summary of the change.
 ---
 
 # Review plan
@@ -24,9 +24,11 @@ code at some place earlier (they may say so), the plan starts there and continue
 
 ## File
 
-One file at the repository root, named `REVIEW_PLAN.md`, or `REVIEW_PLAN_<TOPIC>.md` when
-several plans coexist on the branch. It is not committed. Update it in place when the code
-moves; never leave a plan whose line numbers point at the wrong statements.
+One file per change, never committed. Put it where the user's or the repository's instructions
+say (for example `junk/keep/review_<step>.md`, kept out of git); without such a rule, at the
+repository root as `REVIEW_PLAN.md`, or `REVIEW_PLAN_<TOPIC>.md` when several plans coexist on
+the branch. Update it in place when the code moves; never leave a plan whose line numbers point
+at the wrong statements.
 
 ## Header
 
@@ -39,9 +41,13 @@ In this order, in prose, short:
    that follows in a separate step). The reviewer must not spend time on those.
 4. Naming or convention decisions the diff relies on, if any.
 5. The link convention (see Links) in one sentence, and the instruction to read the code first
-   and then `git diff -- <file>`.
+   and then `git diff -- <file>` (for a plan built step by step,
+   `git diff <step commit>~ <step commit> -- <file>`).
 6. Verification state: which suites ran on this exact state and what they showed, including
-   known failures and why they are unrelated. Numbers and test names, not adjectives.
+   known failures and why they are unrelated. Numbers and test names, not adjectives. When the
+   new tests were checked against the code they cover (that code switched off by hand, the test
+   run, the code restored), say which test failed for which change: "without the truncate only
+   `ErasesStatsOfTableWithoutPortions` fails".
 
 ## Stops
 
@@ -70,6 +76,31 @@ Order rules:
 - callers outside the changed area get the last stop.
 
 Keep a stop to what fits on one screen. If it grows, it is two mechanisms; split it.
+
+## A change built step by step
+
+This applies only when the change is being built in this session, together with the reader, one
+commit at a time, and each commit is reviewed as it is made. For any other change (someone else's
+pull request, a finished branch) the commits do not matter: write one plan in the order that makes
+the whole change easiest to understand, by the rules above, whatever order the author committed in.
+
+When the change is built that way, the plan is one file that grows with it:
+
+- the header covers the whole change: the idea, a table of what each step does, which steps are
+  in the file and which are still to come. Update that list as steps are added;
+- each step gets its own section, `## Step N. <what it does>`, added when the step is ready for
+  review. It opens with its own verification line, then an optional diagram of its mechanism,
+  then its stops;
+- the steps follow the commits, because each is reviewed when it is made; inside a step the stops
+  follow the execution path of the code that step changes, by the order rules above, not the
+  order of its files or hunks;
+- stop numbers continue across steps (`Stop 9` is in step 4), so a stop can be referred to from
+  anywhere in the file;
+- a stop in a later step may say "since step 4" or "until step 6" about code an earlier step
+  introduced or a later one removes;
+- when a later step moves or removes code that an earlier section links to, fix that earlier
+  link in the same edit: point it at the new line, or replace it with "until step N". Earlier
+  sections describe their step, but their links must still resolve.
 
 ## Links
 
@@ -104,7 +135,10 @@ one for the whole flow, and a stop may have one for its own mechanism.
 Tests are reviewed only after the code is settled and agreed to be correct, because most of them
 change when the code changes. Until then, read tests only to understand what the code is meant to
 do. Do not look for problems in them, and do not list missing tests. In the plan, tests get one
-line: which test files changed, and that they will be reviewed after the code is settled.
+line: which test files changed, and that they will be reviewed after the code is settled. In a
+plan built step by step, each step may end with a short tests stop instead: one bullet per new
+test, with its link, what state it sets up and what it checks, still closing with the sentence
+that the tests are reviewed after the code is settled.
 
 ## Close
 
